@@ -1,0 +1,78 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23_small"
+        },
+        "models": [
+            {
+                "name": "geoconstrains_skipgram",
+                "config": {
+                    "d_model": 128,
+                    "output_size": 128,
+                    "dis_feats": [
+                        1
+                    ],
+                    "num_embeds": [
+                        2505
+                    ]
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "geoconstrains_word2vec",
+                    "config": {
+
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "contrastive",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-4,
+                    "meta_types": [
+                        "slice-6"
+                    ],
+                    "ex_meta_types": [
+                        "transprob"
+                    ],
+                    "contra_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 512,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 3,
+                    "meta_types": [
+                        "resample-60"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            }
+        ]
+    }
+]

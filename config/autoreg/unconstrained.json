@@ -1,0 +1,106 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "ia",
+                "config": {
+                    "anchor_length": 16,
+                    "d_model": 64,
+                    "hidden_size": 128,
+                    "num_heads": 8,
+                    "output_size": 64,
+                    "dis_feats": [
+                        5
+                    ],
+                    "num_embeds": [
+                        7
+                    ],
+                    "con_feats": [
+                        0,
+                        3,
+                        4
+                    ]
+                }
+            },
+            {
+                "name": "transformer_decoder",
+                "config": {
+                    "encode_size": 64,
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "num_layers": 2,
+                    "num_heads": 8
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "autoreg",
+                "config": {
+                    "flat_valid": true,
+                    "out_dis": {
+                        "feats": [
+                            1
+                        ],
+                        "num_embeds": [
+                            2505
+                        ]
+                    },
+                    "out_con_feats": [
+                        2
+                    ],
+                    "dis_weight": 1,
+                    "con_weight": 1,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip",
+                        "resample-60"
+                    ],
+                    "enc_meta_i": [
+                        1
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 512,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 3,
+                    "meta_types": [
+                        "resample-60"
+                    ]
+                }
+            }
+        ]
+    }
+]

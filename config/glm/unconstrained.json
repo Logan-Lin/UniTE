@@ -1,0 +1,294 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 192,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "road": {
+                        "link_feat": 1,
+                        "prop_feat": 2,
+                        "num_links": 2505,
+                        "weight": 1
+                    },
+                    "spatial": {
+                        "feats": [
+                            3,
+                            4
+                        ],
+                        "weight": 1
+                    },
+                    "temporal": {
+                        "feats": [
+                            0
+                        ],
+                        "weight": 1
+                    },
+                    "share_token": false,
+                    "embed_size": 64,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-60-s1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "meta_types": [
+                        "glm-60-s0"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 192,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "road": {
+                        "link_feat": 1,
+                        "prop_feat": 2,
+                        "num_links": 2505,
+                        "weight": 1
+                    },
+                    "spatial": {
+                        "feats": [
+                            3,
+                            4
+                        ],
+                        "weight": 1
+                    },
+                    "temporal": {
+                        "feats": [
+                            0
+                        ],
+                        "weight": 1
+                    },
+                    "share_token": false,
+                    "embed_size": 64,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-120-s1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "meta_types": [
+                        "glm-120-s0"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 192,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "road": {
+                        "link_feat": 1,
+                        "prop_feat": 2,
+                        "num_links": 2505,
+                        "weight": 1
+                    },
+                    "spatial": {
+                        "feats": [
+                            3,
+                            4
+                        ],
+                        "weight": 1
+                    },
+                    "temporal": {
+                        "feats": [
+                            0
+                        ],
+                        "weight": 1
+                    },
+                    "share_token": false,
+                    "embed_size": 64,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-180-s1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "meta_types": [
+                        "glm-180-s0"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 192,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "road": {
+                        "link_feat": 1,
+                        "prop_feat": 2,
+                        "num_links": 2505,
+                        "weight": 1
+                    },
+                    "spatial": {
+                        "feats": [
+                            3,
+                            4
+                        ],
+                        "weight": 1
+                    },
+                    "temporal": {
+                        "feats": [
+                            0
+                        ],
+                        "weight": 1
+                    },
+                    "share_token": false,
+                    "embed_size": 64,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-240-s1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "meta_types": [
+                        "glm-240-s0"
+                    ]
+                }
+            }
+        }
+    }
+]

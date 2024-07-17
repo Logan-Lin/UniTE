@@ -1,0 +1,330 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 128,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 3
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "token": {
+                        "feat": 1,
+                        "num_tokens": 2505
+                    },
+                    "dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "con": [
+                        3,
+                        4
+                    ],
+                    "ex_out_dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "ex_out_con": [
+                        2
+                    ],
+                    "dis_weight": 1,
+                    "con_weight": 1,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-60-s1",
+                        "glm-120-s1",
+                        "glm-180-s1",
+                        "glm-240-s1"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "gen_meta_types": [
+                        "glm-60-s0"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 128,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 3
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "token": {
+                        "feat": 1,
+                        "num_tokens": 2505
+                    },
+                    "dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "con": [
+                        3,
+                        4
+                    ],
+                    "ex_out_dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "ex_out_con": [
+                        2
+                    ],
+                    "dis_weight": 1,
+                    "con_weight": 1,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-60-s1",
+                        "glm-120-s1",
+                        "glm-180-s1",
+                        "glm-240-s1"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "gen_meta_types": [
+                        "glm-120-s0"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 128,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 3
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "token": {
+                        "feat": 1,
+                        "num_tokens": 2505
+                    },
+                    "dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "con": [
+                        3,
+                        4
+                    ],
+                    "ex_out_dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "ex_out_con": [
+                        2
+                    ],
+                    "dis_weight": 1,
+                    "con_weight": 1,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-60-s1",
+                        "glm-120-s1",
+                        "glm-180-s1",
+                        "glm-240-s1"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "gen_meta_types": [
+                        "glm-180-s0"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23"
+        },
+        "models": [
+            {
+                "name": "dualpos_transformer",
+                "config": {
+                    "d_model": 128,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "num_layers": 3
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "glm",
+                "config": {
+                    "token": {
+                        "feat": 1,
+                        "num_tokens": 2505
+                    },
+                    "dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "con": [
+                        3,
+                        4
+                    ],
+                    "ex_out_dis": {
+                        "feats": [],
+                        "num_embeds": []
+                    },
+                    "ex_out_con": [
+                        2
+                    ],
+                    "dis_weight": 1,
+                    "con_weight": 1,
+                    "latent_size": 128
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "glm-60-s1",
+                        "glm-120-s1",
+                        "glm-180-s1",
+                        "glm-240-s1"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            },
+            "generation": {
+                "eval_set": 1,
+                "config": {
+                    "gen_meta_types": [
+                        "glm-240-s0"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ]
+                }
+            }
+        }
+    }
+]

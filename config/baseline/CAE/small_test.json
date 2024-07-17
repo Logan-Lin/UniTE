@@ -1,0 +1,81 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23_small",
+            "road_type": "grid"
+        },
+        "models": [
+            {
+                "name": "cae_encoder",
+                "config": {
+                    "num_h": 64,
+                    "num_w": 64,
+                    "channels": [
+                        1,
+                        16,
+                        16,
+                        8,
+                        8
+                    ],
+                    "kernel_sizes": [
+                        9,
+                        7,
+                        5,
+                        3
+                    ],
+                    "output_size": 128
+                }
+            },
+            {
+                "name": "cae_decoder",
+                "config": {
+                    "num_h": 64,
+                    "num_w": 64,
+                    "channels": [
+                        8,
+                        8,
+                        16,
+                        16,
+                        1
+                    ],
+                    "kernel_sizes": [
+                        3,
+                        5,
+                        7,
+                        9
+                    ],
+                    "encode_size": 128
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "cae",
+                    "config": {
+                        "recovery_weight": 0.15
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 64,
+                    "lr": 1e-4,
+                    "meta_types": [
+                        "trajimage-3"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        }
+    }
+]
