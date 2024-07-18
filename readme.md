@@ -1,6 +1,6 @@
 # UniTE: A Survey and Unified Pipeline for Pre-training Spatio-temporal Trajectory Embeddings
 
-Preprint Paper:
+Preprint Paper: [arXiv](https://arxiv.org/abs/2407.12550)
 
 ## Introduction
 This is a unified and modular pipeline that aims to simplify the process of constructing and evaluating pre-training trajectory embedding methods.
