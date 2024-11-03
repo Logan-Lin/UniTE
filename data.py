@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import copy
 import os
 import math
@@ -22,7 +23,6 @@ from tqdm import tqdm, trange
 import networkx as nx
 from sklearn.utils import shuffle
 from sklearn.neighbors import NearestNeighbors, BallTree
-# from node2vec import Node2Vec, edges
 
 from utils import create_if_noexists, remove_if_exists, intersection, geo_distance, idDocker, DotDict, TransferFunction, next_batch
 from utils import k_shortest_paths, latlon2quadkey
@@ -35,18 +35,16 @@ MAX_TRIP_LEN = 120
 TARGET_SAMPLE_RATE = 15
 TRIP_COLS = ['tod', 'road', 'road_prop', 'lng', 'lat', 'weekday', 'seq_i', 'seconds']
 
-with open('path_conf.json') as fp:
-    conf = json.load(fp)
+DATASET_PATH = os.environ['DATASET_PATH']
+META_PATH = os.environ['META_PATH']
 
 
 class Data:
     def __init__(self, name, road_type='road_network'):
         self.name = name
-        self.small = 'small' in name
 
-        paths = conf['small'] if self.small else conf['full']
-        self.base_path = paths['meta_path']
-        self.dataset_path = paths['dataset_path']
+        self.base_path = META_PATH
+        self.dataset_path = DATASET_PATH
 
         self.df_path = f'{self.dataset_path}/{self.name}.h5'
         self.meta_dir = f'{self.base_path}/meta/{self.name}'
@@ -143,8 +141,6 @@ class Data:
             "lat": road_lats
         })
 
-        print("None.")
-
     def load_stat(self):
         # Load statistical information for features.
         self.stat = pd.read_hdf(self.stat_path, key='stat')
@@ -153,7 +149,7 @@ class Data:
     def load_meta(self, meta_type, select_set):
         meta_path = self.get_meta_path(meta_type, select_set)
         loaded = np.load(meta_path, allow_pickle=True)
-        # print('Loaded meta from', meta_path)
+        print('Loaded meta from', meta_path)
         return list(loaded.values())
 
     def build_network(self):
@@ -516,16 +512,11 @@ class Data:
             meta = [edge_index, trans_prob]
 
         elif 'trajsim' in meta_type:
-            # self.meta_dir = f'{self.base_path}/meta/{self.name}'
-            # self.trips: 全部trips
-            # meta_type = 'trajsim-scale-time_size-hot_freq'
             Data_generator = Trajsim_data_generator(self.trips, meta_type, self.meta_dir)
             Data_generator.create_vocal()
-            # Data_generator.create_dist()
             if not os.path.exists(Data_generator.VDpath):
                 Data_generator.create_dist()
 
-            # 创建数据集（注：padding操作不在此进行）
             src_arr, tgt_arr, mta_arr = Data_generator.create_data(trips, select_trip_id)
             meta = [src_arr, tgt_arr, mta_arr]
 
@@ -902,16 +893,13 @@ class Data:
             meta = [road2vec.embedding.weight.cpu().detach().numpy()]
 
         elif 't2vec' in meta_type:
-            # self.meta_dir = f'{self.base_path}/meta/{self.name}'
-            # self.trips: 全部trips
-            # meta_type = 't2vec-xstep-ystep-K-hot_freq-maxvocab_size'
             Data_generator = t2vec_data_generator(self.trips, meta_type, self.meta_dir)
             num_out_region = Data_generator.make_vocab()
             # Data_generator.create_dist()
             if not os.path.exists(Data_generator.VDpath):
                 Data_generator.saveKNearestVocabs()
 
-            # 创建数据集（注：padding操作不在此进行）
+            # Create dataset (Note: Padding operation is not performed here)
             src_arr, tgt_arr, mta_arr = Data_generator.processe_data(trips, select_trip_id)
             meta = [src_arr, tgt_arr, mta_arr]
 
@@ -976,11 +964,11 @@ class Data:
                 for i in trip.index:
                     xoffset = math.floor(width * (trip.loc[i]["lng"]-min_lng)/lng_span)
                     yoffset = math.floor(height * (trip.loc[i]["lat"]-min_lat)/lat_span)
-                    # 确保不越界
+                    # Ensure not out of bounds
                     xoffset = min(xoffset,width-1)
                     yoffset = min(yoffset,height-1)
                     
-                    grid_map[yoffset, xoffset] += 1 # 对应网格区域上的计数+1
+                    grid_map[yoffset, xoffset] += 1 # Increment count for corresponding grid area
 
                 return grid_map
 
@@ -988,9 +976,9 @@ class Data:
             src_arrs, tgt_arrs = [], []
             for _, group in tqdm(trips.groupby('trip'), desc='Gathering trips', total=len(select_trip_id)):
                 arr = group[['lng', 'lat']]
-                # 经纬度转米
+                # Convert longitude and latitude to meters
                 arr[['lng', 'lat']] = arr.apply(lambda row: pd.Series(TransferFunction.lonlat2meters(row['lng'],row['lat'])), axis = 1)
-                # 为轨迹添加高斯噪声
+                # Add Gaussian noise to trajectory
                 if noise is not None:
                     noise_arr = arr.applymap(lambda x: x + random.gauss(mu=0,sigma=noise))
                 else:
@@ -999,7 +987,7 @@ class Data:
                 grid_features = np.diagonal(trip2grid(arr))
                 noise_grid_features = np.diagonal(trip2grid(noise_arr))
 
-                # grid_features等长，无需Padding
+                # grid_features is of equal length, no padding needed
                 src_arrs.append(noise_grid_features)
                 tgt_arrs.append(grid_features)
 
@@ -1365,7 +1353,7 @@ def traj_detour(trip, max_detour_amount,
 
 class Trajsim_data_generator():
     def __init__(self, trips, meta_type, meta_dir):
-        # trips: 数据集中全部的trips！！！！
+        # trips: All trips in the dataset!!!!
         self.trips = trips
         params = meta_type.split('-')
         scale, time_size, hot_freq = float(params[1]), int(params[2]), int(params[3])
@@ -1374,162 +1362,51 @@ class Trajsim_data_generator():
         self.VDpath = os.path.join(meta_dir, meta_type + "_dist.h5")
         self.dropping_rates = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
         self.distorting_rates = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-        # 记录 map_id 到 热度词 的 nn 映射
+        # Map mapping from map_id to hot words
         self.mapId2nnword = {}
         self.trips_starttime = self.trips["time"].apply(lambda x: x.timestamp()).min()
 
     @staticmethod
     def get_trajsim_args(trips, scale, time_size, hot_freq):
         args = {}
-        args["hot_freq"] = hot_freq  # 热度词的最小占用次数，30
+        args["hot_freq"] = hot_freq  # Minimum frequency for hot words, 30
         args["space_nn_topK"] = 20
         args["PAD"], args["BOS"], args["EOS"], args["UNK"] = 0, 1, 2, 3
-        args["scale"], args["time_size"] = scale, time_size  # 经纬度划分单位（如0.001°），时间cell数
-        args["lons"] = [trips["lng"].min(), trips["lng"].max()]  # range of longitude
-        args["lats"] = [trips["lat"].min(), trips["lat"].max()]  # range of latitude
-        # 最大横坐标空间编号,最大纵坐标空间编号
+        args["scale"], args["time_size"] = scale, time_size  # Latitude/longitude division unit (e.g., 0.001°), number of time cells
+        args["lons"] = [trips["lng"].min(), trips["lng"].max()]  # Range of longitude
+        args["lats"] = [trips["lat"].min(), trips["lat"].max()]  # Range of latitude
+        # Maximum spatial x-coordinate number, maximum spatial y-coordinate number
         args["maxx"], args["maxy"] = (args["lons"][1] - args["lons"][0]) // args["scale"], (
                 args["lats"][1] - args["lats"][0]) // args["scale"]
-        # 空间上横块数, 空间上纵块数
+        # Number of horizontal blocks in space, number of vertical blocks in space
         args["numx"], args["numy"] = args["maxx"], args["maxy"]
-        # 空间cell数
+        # Number of spatial cells
         args["space_cell_size"] = args["maxx"] * args["maxy"]
-        # 每个时间段长度
+        # Length of each time period
         args["time_span"] = 86400 // args["time_size"]
-        # vocal word编码从4开始编号，0，1，2，3有特殊作用
+        # Vocabulary word encoding starts from 4, 0,1,2,3 have special purposes
         args["start"] = args["UNK"] + 1
-        # 编码一个时空格子时，空间上的近邻筛选个数， 用于生成V, D
+        # Number of spatial neighbors when encoding a spatiotemporal grid, used for generating V, D
         args["space_nn_nums"] = 20
-        # 编码一个时空格子时，时间上的近邻筛选个数，也是最终的时空近邻个数, 用于生成V, D
+        # Number of temporal neighbors when encoding a spatiotemporal grid, also the final number of spatiotemporal neighbors, used for generating V, D
         args["time_nn_nums"] = 10
-        # 时空格子数目（x,y,t)三维
+        # Number of spatiotemporal grid cells (x,y,t three dimensions)
         args["map_cell_size"] = args["maxx"] * args["maxy"] * args["time_size"]
 
         return DotDict(args)
 
-    def create_vocal(self):
-        '''
-        建立词汇表，获得热度词及 热度词到词汇表的相互映射map
-        计数和字典映射转化， 热度词转化为经纬度转化
-        '''
-        # 建立字典对cell_id进行计数
-        print("创建词汇表, 获得热度词映射")
-        id_counter = {}
-        # 对编码值进行计数
-        for _, group in tqdm(self.trips.groupby('trip'), desc='Gathering trips'):
-            trip = group[['lng', 'lat']].to_numpy()
-            ts = group['time'].apply(lambda x: x.timestamp() - self.trips_starttime).to_numpy()
-            for (lon, lat), t in zip(trip, ts):
-                space_id = self.transferFunction.gps2spaceId(lon, lat)
-                t = int(t) // self.args.time_span
-                map_id = int(self.transferFunction.spaceId2mapId(space_id, t))
-                # 对每个map_id进行计数
-                id_counter[map_id] = id_counter.get(map_id, 0) + 1
-
-        # 对计数从大到小排序
-        self.sort_cnt = sorted(id_counter.items(), key=lambda count: count[1], reverse=True)
-        # 查找 热度词， 即非低频词, 已经按照出现频词从大到小排序
-        sort_cnt = self.sort_cnt
-        self.hot_ids = [int(sort_cnt[i][0]) for i in range(len(sort_cnt)) if sort_cnt[i][1] >= self.args.hot_freq]
-        # 建立从 cell_id 到真实的 map_cell_id 的词典映射, map_cell_id从4开始
-        self.hotcell2word = {}
-        self.word2hotcell = {}
-        for ii in range(len(self.hot_ids)):
-            self.hotcell2word[self.hot_ids[ii]] = ii + self.args.start
-            self.word2hotcell[ii + self.args.start] = self.hot_ids[ii]
-        # 有效词+4个特殊词构成词汇表总的大小
-        self.vocal_nums = len(self.hot_ids) + 4
-        # 得到每个hotcell的 经纬度表示 和 所属时间段
-        self.hot_lonlats = []  # 用于建立kdtree
-        self.hot_ts = []  # 用于在空间邻居的基础上继续查找时间上的邻居
-        for map_id in self.hot_ids:
-            space_id = self.transferFunction.mapId2spaceId(map_id)
-            lon, lat = self.transferFunction.spaceId2gps(space_id)
-            t = self.transferFunction.mapId2t(map_id)  # 时间段
-            self.hot_lonlats.append([round(lon, 8), round(lat, 8)])
-            self.hot_ts.append(t)
-
-        # 根据经纬度点建立Kdtree
-        self.X = np.array(self.hot_lonlats)
-        # 使用ckdtree快速检索每个空间点空间上最近的K个邻居, 正确性检测完毕，正确
-        self.tree = spatial.cKDTree(data=self.X)
-        print('词汇表建立完成，词汇表总量（包含4个特殊编码）：{}'.format(self.vocal_nums))
-
-        # 清除回收所有无用变量
-        del self.sort_cnt, self.hot_lonlats
-        gc.collect()
-
-    def create_dist(self):
-        '''
-        获得所有 hotcell 即 word 两两之间的距离， 构建 V, Ds, Dt
-        V 每行为一个热度词的top K个时空热度词邻居
-        运行较快
-        '''
-        # 从4开始，每个word间的space距离 第0行对应得是第4个word
-        # 获取热度词之间空间上最接近的 space_nn_nums个邻居与它们之间的距离
-        # D.shape (热度词数目, 邻居数目)
-        print("使用利用热度词经纬度构建的Kdtree+ 热度词的时间段, 计算所有热度词的经纬度，构建每个热度词在时空上的近邻V,D")
-        D, V = self.tree.query(self.X, self.args.space_nn_nums)
-        D, V = D.tolist(), V.tolist()
-        # 从 space_nn_nums 个按照空间最近的邻居中， 再选一定数目个时间上最接近的
-        all_nn_time_diff = []  # 时间上的距离
-        all_nn_space_diff = []  # 空间上的距离
-        all_nn_index = []
-        for ii in tqdm(range(len(self.hot_ts)), desc='create VD'):
-            # for ii in range(len(self.hot_ts)):
-            #     if ii % 10000 == 0: print("%d / %d"%(ii, len(self.hot_ts)))
-            # 编号为ii的空间邻居
-            space_nn = V[ii]
-            # 空间距离
-            space_dist = D[ii]
-            # 得到这几个space_nn的时间段
-            nn_ts = np.array(self.hot_ts)[space_nn]
-            # 得到与ii的时间差距
-            line = abs(nn_ts - self.hot_ts[ii]).tolist()
-            # 对第i个点到其他点的距离进行排序, 得到时间上的top nn
-            id_dist_pair = list(enumerate(line))
-            line.sort()
-            id_dist_pair.sort(key=lambda x: x[1])
-            # 获取每一个点的top-k索引编号
-            top_k_index = [id_dist_pair[i][0] for i in range(self.args.time_nn_nums)]
-            # 获取每一个点的top-k 距离
-            top_k_time_diff = [line[i] for i in range(self.args.time_nn_nums)]
-            top_k_dist_diff = [space_dist[ii] for ii in top_k_index]
-            # 转换到space_nn上,注意所有V需要+4
-            top_k = [space_nn[ii] + self.args.start for ii in top_k_index]
-
-            all_nn_time_diff.append(top_k_time_diff)
-            all_nn_space_diff.append(top_k_dist_diff)
-            all_nn_index.append(top_k)
-
-        # 构建加上0，1，2，3 (PAD, BOS, EOS, UNK) 号词后的距离V,D
-        for ii in range(4):
-            all_nn_time_diff.insert(ii, [0] * self.args.time_nn_nums)
-            all_nn_space_diff.insert(ii, [0] * self.args.time_nn_nums)
-            all_nn_index.insert(ii, [ii] * self.args.time_nn_nums)
-        # 写入到V,D文件中， 将对应的写入到h5文件中
-        with h5py.File(self.VDpath, "w") as f:
-            # 存储时空上的K*time_size近邻, 空间距离以及时间距离
-            # V.shape = (热度词个数+4)*时空上的邻居数目
-            f["V"] = np.array(all_nn_index)
-            f["Ds"] = np.array(all_nn_space_diff)
-            f["Dt"] = np.array(all_nn_time_diff)
-        # with h5py.File(self.VDpath, "r") as f:
-        #     V_read, Ds_read, Dt_read = f["V"][...], f["Ds"][...], f["Dt"][...]
-        # print(V_read.size)
-
     def create_data(self, trips, select_trip_id):
         src_arr, tgt_arr, mta_arr = [], [], []
-        # select_set: index of set to dump. 0 - training set, 1 - validation set, and 2 - testing set.
+        # select_set: index of set to dump. 0 - training set, 1 - validation set, and 2 - testing set
         for _, group in tqdm(trips.groupby('trip'), desc='Gathering trips', total=len(select_trip_id)):
             trip = group[['lng', 'lat']].to_numpy()
             ts = group['time'].apply(lambda x: x.timestamp() - self.trips_starttime).to_numpy()
 
             mta = self.transferFunction.tripmeta(trip, ts)  # tuple
-            # 轨迹时空编码序列，全部为热度词，有效减少了token数目
+            # Trajectory spatiotemporal encoding sequence, all hot words, effectively reducing number of tokens
             exact_trj = self.transferFunction.trip2words(trip, ts,
                                                          self.hotcell2word, self.tree, self.hot_ts)  # list
-            # 根据原轨迹, 只对发生下采样和偏移的位置点进行重新更新，增强效率
+            # Based on original trajectory, only update positions with downsampling and offset, improving efficiency
             noise_trips, noise_ts, noise_trjs = self.add_noise(exact_trj, trip, ts)
             for src in noise_trjs:
                 src_arr.append(src)  # ndarray
@@ -1539,114 +1416,24 @@ class Trajsim_data_generator():
 
         return src_arr, tgt_arr, mta_arr
 
-    def add_noise(self, exact_trj, trip, ts):
+    def downsamplingDistort(self, trip):
         """
-        下采样+添加噪声， 只对发生下采样和偏移的位置点进行重新计算热度词编码
-
-        :param exact_trj: 原轨迹编码序列
-        :param trip: 轨迹位置序列
-        :param ts: 轨迹时间戳序列
-        :return: 带噪声和下采样的轨迹编码序列集合
+        Downsampling + adding noise, only recalculate hot word encoding for points with downsampling and offset
         """
-        mu = 0
-        region_sigma = 0.001
-        time_sigma = 200
-
-        # 存储位置序列，时间戳序列，编码值序列
-        noise_trips = []
-        noise_ts = []
-        noise_trjs = []
-
+        noisetrips = []
         for dropping_rate in self.dropping_rates:
-            randx = np.random.rand(len(trip)) > dropping_rate
-            # 每条轨迹的起点和终点 设置为 不可下采样删除
-            randx[0], randx[-1] = True, True
-            sampled_trip = trip[randx]
-            sampled_t = ts[randx]
-            sampled_trj = np.array(exact_trj)[randx]
-
+            noisetrip1 = self.downsampling(trip, dropping_rate)
             for distorting_rate in self.distorting_rates:
-                # 随机选择会发生偏移的位置
-                randx = np.random.rand(len(sampled_trip)) < distorting_rate
-                # 每条轨迹的起点和终点不可发生噪声偏移
-                randx[0], randx[-1] = False, False
-                sampled_trip[randx] = sampled_trip[randx] + random.gauss(mu, region_sigma)
-                sampled_t[randx] = sampled_t[randx] + random.gauss(mu, time_sigma)
-                # 只需要对需要产生噪声的位置点 编码进行重新更新
-                sampled_trj[randx] = self.transferFunction.trip2words(sampled_trip[randx], sampled_t[randx],
-                                                                      self.hotcell2word, self.tree, self.hot_ts)
-                noise_trips.append(sampled_trip)
-                noise_ts.append(sampled_t)
-                noise_trjs.append(sampled_trj)
-        return noise_trips, noise_ts, noise_trjs
-    # def downsample_and_distort(self, data):
-    #     """
-    #     输入data为 [trip, ts, exact_trj] 集合， 输出为各种下采样和distort后的数据
-    #     :param data:
-    #     :return:
-    #     """
-    #     mu = 0
-    #     region_sigma = 0.005
-    #     time_sigma = 300
-    #
-    #     all_res_r1 = []
-    #     for r1 in self.dropping_rates:
-    #         res_r1 = []
-    #         for (trip, ts, exact_trj) in data:
-    #             trip, ts, exact_trj = np.array(trip),np.array(ts),np.array(exact_trj)
-    #             randx = np.random.rand(len(trip)) > r1
-    #             # 每条轨迹的起点和终点 设置为 不可下采样删除
-    #             randx[0], randx[-1] = True, True
-    #             sampled_trip = trip[randx]
-    #             sampled_t = ts[randx]
-    #             sampled_trj = np.array(exact_trj)[randx]
-    #             res_r1.append([sampled_trip, sampled_t, sampled_trj])
-    #         all_res_r1.append(res_r1)
-    #
-    #     all_res_r2 = []
-    #     for r2 in self.distorting_rates:
-    #         res_r2 = []
-    #         for (trip, ts, exact_trj) in data:
-    #             trip, ts, exact_trj = np.array(trip),np.array(ts),np.array(exact_trj)
-    #             randx = np.random.rand(len(trip)) < r2
-    #             randx[0], randx[-1] = False, False
-    #             trip[randx] = trip[randx] + random.gauss(mu, region_sigma)
-    #             ts[randx] = ts[randx] + random.gauss(mu, time_sigma)
-    #             # 只需要对需要产生噪声的位置点 编码进行重新更新
-    #             exact_trj[randx] = self.transferFunction.trip2words(trip[randx], ts[randx],
-    #                                                                 self.hotcell2word, self.tree, self.hot_ts)
-    #             res_r2.append([trip, ts, exact_trj])
-    #         all_res_r2.append(res_r2)
-    #     return all_res_r1, all_res_r2
-
-    # # 根据验证集数据，生成实验用数据
-    # def generate_exp_data(self, all_val_trips, all_val_ts):
-    #     all_val_trips, all_val_ts = np.array(all_val_trips), np.array(all_val_ts)
-    #     # 得到不同下采样率和噪声率的数据用于实验测量
-    #     self.exp_data = []
-    #     ii = 0
-    #     max_num = min(len(all_val_trips), self.max_exp_trj_num)
-    #     for trip, ts in zip(all_val_trips, all_val_ts):
-    #         exact_trj = self.trip2words(trip, ts)
-    #         self.exp_data.append([trip, ts, exact_trj])
-    #         ii += 1
-    #         if ii >= max_num:
-    #             break
-    #
-    #     # exp_data_r1 下采样的实验用数据; exp_data_r2 噪声偏移实验用数据
-    #     self.all_res_r1, self.all_res_r2 = self.downsample_and_distort(self.exp_data)
-    #     path1 = os.path.join(self.save_path, "exp_data_r1")
-    #     path2 = os.path.join(self.save_path, "exp_data_r2")
-    #     np.save(path1, self.all_res_r1, allow_pickle=True)
-    #     np.save(path2, self.all_res_r2, allow_pickle=True)
+                noisetrip2 = self.distort(noisetrip1, distorting_rate)
+                noisetrips.append(noisetrip2)
+        return noisetrips
 
 
 class t2vec_data_generator():
     def __init__(self, trips, meta_type, meta_dir):
-        # trips: 数据集中全部的trips！！！！
         self.trips = trips
         params = meta_type.split('-')
-        # t2vec代码设置：100,100,10,100,40000
+        # t2vec code settings: 100,100,10,100,40000
         xstep, ystep, K, hot_freq, maxvocab_size = int(params[1]), int(params[2]), \
                                                    int(params[3]), int(params[4]), int(params[5])
         self.region = self.get_region(trips, xstep, ystep, K, hot_freq, maxvocab_size)
@@ -1670,22 +1457,22 @@ class t2vec_data_generator():
 
         region["lons"] = [trips["lng"].min(), trips["lng"].max()]  # range of longitude
         region["lats"] = [trips["lat"].min(), trips["lat"].max()]  # range of latitude
-        # 经纬度最值对应的（x,y）（单位：米）
-        region["minxy"] = list(TransferFunction.lonlat2meters(region["lons"][0], region["lats"][0])) # tuple转list
+        # Longitude and latitude extremes corresponding to (x,y) (unit: meters)
+        region["minxy"] = list(TransferFunction.lonlat2meters(region["lons"][0], region["lats"][0])) # tuple to list
         region["maxxy"] = list(TransferFunction.lonlat2meters(region["lons"][1], region["lats"][1]))
 
-        region["xstep"], region["ystep"] = xstep, ystep  # 网格的长/宽
-        # 空间上x/y方向网格个数
-        region["numx"] = int(math.ceil((region["maxxy"][0] - region["minxy"][0]) / region["xstep"]))  # x方向网格个数
-        region["numy"] = int(math.ceil((region["maxxy"][1] - region["minxy"][1]) / region["ystep"]))  # y方向网格个数
+        region["xstep"], region["ystep"] = xstep, ystep  # Grid length/width
+        # Number of x/y direction grids in space
+        region["numx"] = int(math.ceil((region["maxxy"][0] - region["minxy"][0]) / region["xstep"]))  # Number of x direction grids
+        region["numy"] = int(math.ceil((region["maxxy"][1] - region["minxy"][1]) / region["ystep"]))  # Number of y direction grids
 
-        region["hot_freq"] = hot_freq  # 热度词的最小占用次数，30
-        region["maxvocab_size"] = maxvocab_size  # 热度词表最大大小
+        region["hot_freq"] = hot_freq  # Minimum occupancy frequency for hot words, 30
+        region["maxvocab_size"] = maxvocab_size  # Maximum size of hot word table
 
         region["K_nearest"] = K
 
         region["PAD"], region["BOS"], region["EOS"], region["UNK"] = 0, 1, 2, 3
-        # vocal word编码从4开始编号，0，1，2，3有特殊作用
+        # Vocabulary word encoding starts from 4, 0,1,2,3 have special purposes
         region["vocab_start"] = region["UNK"] + 1
 
         return DotDict(region)
@@ -1693,14 +1480,14 @@ class t2vec_data_generator():
 
     def make_vocab(self):
         '''
-        建立词汇表，获得热度词及 热度词到词汇表的相互映射map
-        计数和字典映射转化， 热度词转化为经纬度转化
+        Build vocabulary, obtain hot words and mappings between hot words and vocabulary
+        Count and dictionary mapping conversion, convert hot words to coordinates
         '''
-        print("创建词汇表, 获得热度词映射")
-        self.cellcount = defaultdict(int)  # 建立字典对cell_id进行计数
+        print("Creating vocabulary, obtaining hot word mappings")
+        self.cellcount = defaultdict(int)  # Build dictionary to count cell_id
         num_out_region = 0
 
-        # 对编码值进行计数
+        # Count encoding values
         for _, group in tqdm(self.trips.groupby('trip'), desc='Gathering trips'):
             trip = group[['lng', 'lat']].to_numpy()
             for lon, lat in trip:
@@ -1717,9 +1504,9 @@ class t2vec_data_generator():
         self.hotcell2vocab = {cell: i + self.vocab_start for i, cell in enumerate(self.hotcell)}
         self.vocab2hotcell = {count: cell for cell, count in self.hotcell2vocab.items()}
         self.vocab_size = self.vocab_start + len(self.hotcell)
-        print('词汇表建立完成，词汇表总量（包含4个特殊编码）：{}'.format(self.vocab_size))
+        print('Vocabulary created, total number of vocabulary (including 4 special codes): {}'.format(self.vocab_size))
 
-        # 根据热词对应的（x,y）点建立Kdtree
+        # Build Kdtree based on coordinates of hot words
         coord = [self.transferFunction.cellId2coord(cellId) for cellId in self.hotcell]
         self.hotcell_kdtree = spatial.cKDTree(coord)
 
@@ -1731,15 +1518,15 @@ class t2vec_data_generator():
         k-nearest vocabs and corresponding distances for each vocab.
         This is used in training for KLDiv loss.
         """
-        print("使用构建的Kdtree计算所有热度词之间的距离，构建每个热度词在空间上的近邻V,D")
+        print("Using constructed Kdtree to calculate distances between all hot words, building spatial neighbors V,D for each hot word")
         V = np.zeros((self.vocab_size, self.region.K_nearest), dtype=np.int32)  # k-nearest vocabs (vocab_size, k)
         D = np.zeros((self.vocab_size, self.region.K_nearest), dtype=np.float64)  # k-nearest distances (vocab_size, k)
 
-        for vocab in range(self.vocab_start):  # 特殊词距离置为0
+        for vocab in range(self.vocab_start):  # Special words distance set to 0
             V[vocab, :] = vocab
             D[vocab, :] = 0.0
 
-        # 获取热度词之间空间上最接近的 K_nearest个邻居与它们之间的距离
+        # Get space_nn_nums closest neighbors and their distances for hot words in space
         for vocab in range(self.vocab_start, self.vocab_size):
             cellId = self.vocab2hotcell[vocab]
             kcells, dists = self.transferFunction.knearestHotcells(cellId, self.region.K_nearest, self.hotcell_kdtree, self.hotcell)
@@ -1748,7 +1535,7 @@ class t2vec_data_generator():
             D[vocab, :] = dists
 
         cellsize = int(self.region.xstep)
-        # 存储空间上的K近邻和空间距离，写入到h5文件中
+        # Store spatial K-nearest neighbors and space distances, write to h5 files
         with h5py.File(self.VDpath, "w") as f:
             f["V"] = V
             f["D"] = D
@@ -1761,16 +1548,16 @@ class t2vec_data_generator():
         for _, group in tqdm(trips.groupby('trip'), desc='Gathering trips', total=len(select_trip_id)):
             trip = group[['lng', 'lat']].to_numpy()
             meta = self.transferFunction.get_tripmeta(trip)
-            # 轨迹编码序列，全部为热度词，有效减少了token数目
+            # Trajectory spatiotemporal encoding sequence, all hot words, effectively reducing number of tokens
             exact_traj = self.transferFunction.trip2seq(trip, self.hotcell2vocab,
                                                         self.hotcell_kdtree, self.hotcell)
-            # 根据原轨迹, 只对发生下采样和偏移的位置点进行重新更新，增强效率
+            # Based on original trajectory, only update positions with downsampling and offset, improving efficiency
             noise_trips = self.downsamplingDistort(trip)
             for noise_trip in noise_trips:
                 noise_seq = self.transferFunction.trip2seq(noise_trip, self.hotcell2vocab,
                                                         self.hotcell_kdtree, self.hotcell)
                 src_arr.append(np.array(noise_seq))
-                # 同一轨迹不同扰动和剔除条件下，他们的trg和meta相同
+                # Same trajectory, different perturbation and deletion conditions, their trg and meta are the same
                 tgt = [self.region.BOS] + exact_traj + [self.region.EOS]
                 tgt_arr.append(np.array(tgt))
                 mta_arr.append(np.array(meta))
@@ -1798,7 +1585,7 @@ class t2vec_data_generator():
 
     def downsamplingDistort(self, trip):
         """
-        下采样+添加噪声， 只对发生下采样和偏移的位置点进行重新计算热度词编码
+        Downsampling + adding noise, only recalculate hot word encoding for points with downsampling and offset
         """
         noisetrips = []
         for dropping_rate in self.dropping_rates:
@@ -1834,12 +1621,10 @@ def resample_to_k_segments(trips, valid_lens, kseg):
     return kseg_trips
 
 
-if __name__ == '__main__':
-    from argparse import ArgumentParser
-
+def main():
     parser = ArgumentParser()
-    parser.add_argument('-n', '--name', help='the name of the dataset', type=str, default="cd23_small") # required=True  "small_chengdu" "cd23_small"
-    parser.add_argument('-t', '--types', help='the type of meta data to dump', type=str, default="resample-60") # required=True # "trajsim-0.001-300-2" 't2vec-100-100-10-5-40000' "robustDAA-16-16-50"
+    parser.add_argument('-n', '--name', help='the name of the dataset', type=str, required=True)
+    parser.add_argument('-t', '--types', help='the type of meta data to dump', type=str, default="resample-60")
     parser.add_argument('-i', '--indices', help='the set index to dump meta', type=str, default="0,1,2")
     parser.add_argument('-g', '--grid', action='store_true', help="whether to project to grids.")
 
@@ -1853,3 +1638,7 @@ if __name__ == '__main__':
             data.dump_meta(type, int(i))
             # Test if we can load meta from the file
             meta = data.load_meta(type, i)
+
+
+if __name__ == '__main__':
+    main()

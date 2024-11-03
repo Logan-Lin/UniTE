@@ -1,0 +1,276 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23_small"
+        },
+        "models": [
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_encoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128
+                }
+            },
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_decoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128,
+                    "seq_num": 46,
+                    "device": "cpu"
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "trajectory2vec",
+                "config": {
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 1,
+                    "pre_length": 1,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                        ], 
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23_small"
+        },
+        "models": [
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_encoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128
+                }
+            },
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_decoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128,
+                    "seq_num": 46,
+                    "device": "cpu"
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "trajectory2vec",
+                "config": {
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "classification",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip", "class"
+                    ],
+                    "enc_meta_i": [
+                        0
+                        ], 
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "cd23_small"
+        },
+        "models": [
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_encoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128
+                }
+            },
+            {
+                "augmentation":{
+                    "name": "Trajectory2VecSampler",
+                    "config": {
+                        "windowsize": 2,
+                        "offset": 1,
+                        "seq_len": 46
+                    }
+                },
+                "name": "trajectory2vec_decoder",
+                "config": {
+                    "input_size": 18,
+                    "hidden_size": 128,
+                    "seq_num": 46,
+                    "device": "cpu"
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "trajectory2vec",
+                "config": {
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 12,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 1,
+                    "meta_types": [
+                        "trip", "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                        ], 
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

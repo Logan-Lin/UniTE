@@ -324,8 +324,8 @@ class BatchPreparer:
         src_arrs = torch.as_tensor(src_arrs, dtype=torch.float32, device=device)
         tgt_arrs = torch.as_tensor(tgt_arrs, dtype=torch.float32, device=device)
         
-        # 预训练阶段，len(batch_meta)=4, 包含由src_arrs分出的L_D, S
-        # 下游任务中，len(batch_meta)=2, L_D, S实际分别为src_arrs, tgt_arrs
+        # In pretraining phase, len(batch_meta)=4, containing L_D and S split from src_arrs
+        # In downstream tasks, len(batch_meta)=2, L_D and S are actually src_arrs and tgt_arrs respectively
         L_D, S = batch_meta[-2], batch_meta[-1]
         L_D = torch.as_tensor(L_D, dtype=torch.float32, device=device)
         S = torch.as_tensor(S, dtype=torch.float32, device=device)
@@ -401,7 +401,7 @@ class TransferFunction():
 
     @staticmethod
     def lonlat2meters(lon, lat):
-        '''经纬度转米'''
+        '''Convert longitude and latitude to meters'''
         semimajoraxis = 6378137.0
         east = lon * 0.017453292519943295
         north = lat * 0.017453292519943295
@@ -412,7 +412,7 @@ class TransferFunction():
 
     @staticmethod
     def meters2lonlat(x, y):
-        '''米转经纬度'''
+        '''Convert meters to longitude and latitude'''
         semimajoraxis = 6378137.0
         lon = x / semimajoraxis / 0.017453292519943295
         t = math.exp(y / 3189068.5)
@@ -472,65 +472,65 @@ class TransferFunction():
     # -------------------------------------------------------------------------------------------------------------
     def lonlat2xyoffset(self, lon, lat):
         '''
-        将经纬度转换为xy轴上的相对偏移量（经纬度最小值位置为原点）, 映射到平面图上
-        例如：(116.3, 40.0)->(4,8)
+        Convert longitude and latitude to relative offsets on x-y axes (with minimum lon/lat as origin), mapped to a plane
+        Example: (116.3, 40.0)->(4,8)
         '''
         xoffset = round((lon - self.args.lons[0]) / self.args.scale)
         yoffset = round((lat - self.args.lats[0]) / self.args.scale)
         return int(xoffset), int(yoffset)
 
     def xyoffset2lonlat(self, xoffset, yoffset):
-        ''' 相对偏移量转换为经纬度  (4,8)-> (116.3, 40.0)'''
+        '''Convert relative offsets to longitude and latitude (4,8)-> (116.3, 40.0)'''
         lon = self.args.lons[0]+xoffset*self.args.scale
         lat = self.args.lats[0]+yoffset*self.args.scale
         return lon,lat
 
     def offset2spaceId(self, xoffset, yoffset):
-        ''' (xoffset,yoffset) -> space_cell_id  (4,8)->116'''
+        '''Convert (xoffset,yoffset) to space_cell_id (4,8)->116'''
         return int(yoffset * self.args.numx + xoffset)
 
     def spaceId2offset(self, space_cell_id):
-        ''' space_cell_id -->(x,y) 116->(4.8)'''
+        '''Convert space_cell_id to (x,y) 116->(4.8)'''
         yoffset = space_cell_id // self.args.numx
         xoffset = space_cell_id % self.args.numx
         return int(xoffset), int(yoffset)
 
     def gps2spaceId(self, lon, lat):
-        ''' gps--> space_cell_id  116.3,40->116'''
+        '''Convert GPS coordinates to space_cell_id 116.3,40->116'''
         xoffset, yoffset = self.lonlat2xyoffset(lon, lat)
         space_cell_id = self.offset2spaceId(xoffset, yoffset)
         return int(space_cell_id)
 
     def spaceId2gps(self, space_cell_id):
-        '''space_cell_id -->gps 116->116.3,40'''
+        '''Convert space_cell_id to GPS coordinates 116->116.3,40'''
         xoffset, yoffset = self.spaceId2offset(space_cell_id)
         lon,lat = self.xyoffset2lonlat(xoffset,yoffset)
         return lon,lat
 
     def spaceId2mapId(self, space_id, t):
-        ''' space_cell_id+t --> map_id  116,10->1796'''
+        '''Convert space_cell_id+t to map_id 116,10->1796'''
         return int(space_id + t*self.args.space_cell_size)
 
     def mapId2spaceId(self, map_id):
-        ''' map_id -->space_cell_id  1796-> 116'''
+        '''Convert map_id to space_cell_id 1796-> 116'''
         return int(map_id % self.args.space_cell_size)
 
     def mapId2t(self, map_id):
-        ''' map_id -->t 1796-> 10'''
+        '''Convert map_id to t 1796-> 10'''
         return int(map_id // self.args.space_cell_size)
 
     def mapId2word(self, map_id, hotcell2word, tree, hot_ts):
-        ''' map_id -> vocal_id 若不在热度词中，则用与其较近的词代替 '''
+        '''Convert map_id to vocab_id. If not in hot cells, use nearest word as substitute'''
         word = hotcell2word.get(map_id, self.args.UNK)
         return word if word != self.args.UNK else self.get_a_nn(map_id, tree, hot_ts)
 
     @staticmethod
     def word2mapId(word, word2hotcell):
-        ''' word -> map_id 不会存在查找不到的情况'''
+        '''Convert word to map_id. Will always find a match'''
         return word2hotcell.get(word, 0)
 
     def word2xyt(self, word, word2hotcell):
-        ''' word --> xoffset,yoffset,t '''
+        '''Convert word to xoffset,yoffset,t'''
         map_id = self.word2mapId(word, word2hotcell)
         t = self.mapId2t(map_id)
         space_id = self.mapId2spaceId(map_id)
@@ -538,26 +538,26 @@ class TransferFunction():
         return xoffset,yoffset,t
 
     def xyt2word(self,x,y,t, hotcell2word, tree, hot_ts):
-        ''' xoffset,yoffset,t -->word '''
+        '''Convert xoffset,yoffset,t to word'''
         space_id = self.offset2spaceId(x, y)
         map_id = self.spaceId2mapId(space_id, t)
         word = self.mapId2word(map_id, hotcell2word, tree, hot_ts)
         return word
 
     def mapIds2words(self, map_ids, hotcell2word, tree, hot_ts):
-        ''' map_ids --> words'''
+        '''Convert map_ids to words'''
         words = [self.mapId2word(id, hotcell2word, tree, hot_ts) for id in map_ids]
         return words
 
     @staticmethod
     def words2mapIds(words, word2hotcell):
-        '''words -+--> map_ids'''
+        '''Convert words to map_ids'''
         map_ids = [word2hotcell.get(id, 0) for id in words]
         return map_ids
 
     # -------------------------------------------------------------------------------------------------------------
     def trip2spaceIds(self, trip):
-        ''' trip --> space_cell_ids '''
+        '''Convert trip to space_cell_ids'''
         space_ids = []
         for lonlat in trip:
             space_id = self.gps2spaceId(lonlat[0], lonlat[1])
@@ -565,7 +565,7 @@ class TransferFunction():
         return space_ids
 
     def trip2mapIDs(self, trip, ts):
-        ''' trip --> space_cell_ids --> map_ids'''
+        '''Convert trip to space_cell_ids then to map_ids'''
         map_ids = []
         for (lon, lat), t in zip(trip, ts):
             space_id = self.gps2spaceId(lon, lat)
@@ -575,7 +575,7 @@ class TransferFunction():
         return list(map_ids)
 
     def trip2words(self, trip, ts, hotcell2word, tree, hot_ts):
-        ''' 减少迭代次数的trip2words '''
+        '''Optimized trip2words with reduced iterations'''
         words = []
         for (lon, lat), t in zip(trip, ts):
             space_id = self.gps2spaceId(lon, lat)
@@ -598,7 +598,7 @@ class TransferFunction():
     # -------------------------------------------------------------------------------------------------------------
     @staticmethod
     def tripmeta(trip, ts):
-        ''' 得到一个trip的meta 经纬度+时间重心坐标'''
+        '''Get trip metadata: longitude/latitude + time centroid coordinates'''
         long_min = min([p[0] for p in trip])
         long_max = max([p[0] for p in trip])
         lat_min = min([p[1] for p in trip])
@@ -629,10 +629,10 @@ class TransferFunction():
     @staticmethod
     def get_snn(long, lat, tree, K):
         """
-        获取一个 经纬度点 的 空间最近词
+        Get K spatially nearest words for a longitude/latitude point
 
-        :param long: 经度
-        :param lat: 纬度
+        :param long: longitude
+        :param lat: latitude
         :param tree: ckdtree
         :param K: top K
         :return:
@@ -643,28 +643,26 @@ class TransferFunction():
 
     def get_a_nn(self, map_id, tree, hot_ts):
         """
-        获得一个离 mapId最近的 hot word
-        2021/11/20 检查正确性完毕
+        Get the nearest hot word for a mapId
+        Correctness verified on 2021/11/20
 
-        :param map_id: 映射到的时空编码值
+        :param map_id: mapped spatiotemporal code value
         :param tree: ckdtree
-        :param hot_ts: 用于在空间邻居的基础上继续查找时间上的邻居
-        :return: 与mapId最近的 hot word，也是一个时空编码值
+        :param hot_ts: used to find temporal neighbors after spatial neighbors
+        :return: spatiotemporal code value of nearest hot word to mapId
         """
-        # 得到非热度词的经纬度和时间
+        # Get coordinates and time for non-hot word
         space_id = self.mapId2spaceId(map_id)
         lon, lat = self.spaceId2gps(space_id)
         t = self.mapId2t(map_id)
-        # 得到在热度词中的空间邻居, 为+4后的编码值
+        # Get spatial neighbors among hot words, with +4 encoding
         k_dists, k_indexs = self.get_snn(lon, lat, tree, self.args.space_nn_topK)
-        # k_dists, k_indexs = k_dists.tolist(), k_indexs.tolist()
-        # 选择时间最接近的热度词输出
-        # 初始化一个最小的时间差距 和 一个最小邻居
+        # Initialize minimum time difference and nearest neighbor
         min_hot_t = 1000
         nn = self.args.UNK
-        # 经验证以下找最近邻比利用array快
+        # Finding nearest neighbor is faster than using array
         for hot_word in k_indexs:
-            # 注意这里需要-4来获取每个空间邻居所处的时间段
+            # Note: need -4 to get time period for each spatial neighbor
             if abs(hot_ts[hot_word-self.args.start]-t) < min_hot_t:
                 min_hot_t = abs(hot_ts[hot_word-self.args.start]-t)
                 nn = hot_word
@@ -681,14 +679,14 @@ class TransferFunction():
 
 def pad_arrays_pair(src, trg, keep_invp=False):
     """
-    1. 对轨迹补零操作，使得所有轨迹的长度都一样长
-    2. 对轨迹长度从大到小进行排序
-    3. 返回TD类，每代表一个轨迹点
-    4. 返回形式 ['src', 'lengths', 'trg', 'invp']
+    1. Pad trajectories with zeros to make all trajectories the same length
+    2. Sort trajectories by length in descending order
+    3. Return TD class, each representing a trajectory point
+    4. Return format ['src', 'lengths', 'trg', 'invp']
 
     :param src: (list[array[int32]])
-    :param trg: (list[array[int32]])
-    :param keep_invp: 是否需要保留原来的轨迹长度排序索引
+    :param trg: (list[array[int32]]) 
+    :param keep_invp: Whether to keep the original trajectory length sorting index
     :return:
 
     src (batch, seq_len1)
@@ -714,11 +712,12 @@ def pad_arrays_pair(src, trg, keep_invp=False):
         # return TD(src=src.t().contiguous(), lengths=lengths.view(1, -1), trg=trg.t().contiguous(), invp=[])
         return TD(src=src.contiguous(), lengths=lengths.view(-1), trg=trg.contiguous(), invp=[])
 
+
 def pad_arrays(a):
     """
-    多条轨迹(一个批次的轨迹)补位操作，每条轨迹的长度补0，使其长度和该batch最长轨迹的长度相同
-    :param a: 一批轨迹
-    :return:
+    Pad multiple trajectories (a batch of trajectories) with zeros to make each trajectory length equal to the longest trajectory in the batch
+    :param a: A batch of trajectories
+    :return: Padded trajectories tensor
     """
     max_length = max(map(len, a))
     a = [pad_array(a[i], max_length) for i in range(len(a))]
@@ -727,10 +726,10 @@ def pad_arrays(a):
 
 def pad_array(a, max_length, PAD=0):
     """
-    :param a: 一条待补位操作的轨迹 (array[int32])
-    :param max_length: 该条轨迹所在批次轨迹中 轨迹的最大长度，按该长度标准补位
-    :param PAD: 补位值，设置为0
-    :return: 补位后的轨迹
+    :param a: A single trajectory to be padded (array[int32])
+    :param max_length: The maximum trajectory length in the batch, used as padding target length
+    :param PAD: Padding value, set to 0
+    :return: Padded trajectory
     """
     return np.concatenate((a, [PAD]*(max_length - len(a))))
 
@@ -746,10 +745,10 @@ def argsort(seq):
 
 def invpermute(p):
     """
-    输入p,返回p的每个位置的值的索引invp
+    Given input p, return invp containing indices of each value's position in p
     idx = [5, 7, 8, 9, 6, 1, 2, 0, 3, 4]
     invp(idx) = [7, 5, 6, 8, 9, 0, 4, 1, 2, 3]
-    invp[p[i]] = i 如 p中有个数是45，我现在想知道45在p的第几个位置，那么invp[45]会告诉我们答案
+    invp[p[i]] = i, e.g. if p contains 45, invp[45] tells us its position in p
     invp[i] = p.index(i)
 
     inverse permutation

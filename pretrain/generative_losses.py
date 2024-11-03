@@ -16,7 +16,7 @@ from torch_scatter import scatter_add
 from pytorch_msssim import ssim
 
 from pretrain.func import *
-from model.transformer import ContinuousEncoding, get_batch_mask, TransformerDecoder
+from modules.model.transformer import ContinuousEncoding, get_batch_mask, TransformerDecoder
 from data import Denormalizer, TRIP_COLS
 from utils import pad_arrays_pair, next_batch, random_subseq, next_batch_recycle
 
@@ -544,18 +544,18 @@ class TrajectorySim(nn.Module):
         self.dis_freq = dis_freq
         self.generator_batch = generator_batch
 
-        self.triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)  # 三角损失
-        self.loss_function = self.set_loss()  # 损失函数
+        self.triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)  # Triplet loss
+        self.loss_function = self.set_loss()  # Loss function
 
-        #  Encoder到Decoder 的中间输出输出到词汇表向量的映射，并进行了log操作
+        # Mapping from encoder-decoder intermediate output to vocabulary vector space with log operation
         self.mapping = nn.Sequential(nn.Linear(hidden_size, self.vocab_size), nn.LogSoftmax(dim=1))
 
     def set_loss(self):
         """
-        设置KL散度损失函数
+        Set KL divergence loss function
 
-        :param args:  参数设定
-        :return: 设置的损失函数
+        :param args: Parameter settings
+        :return: The configured loss function
         """
         if self.criterion_name == "NLL":
             criterion = self.nll_criterion().to(self.device)
@@ -565,7 +565,7 @@ class TrajectorySim(nn.Module):
             assert os.path.isfile(self.knn_vocabs_path), "{} does not exist".format(self.knn_vocabs_path)
             print("Loading vocab distance file {}...".format(self.knn_vocabs_path))
             with h5py.File(self.knn_vocabs_path, 'r') as f:
-                # VD size = (vocal_size, 10) 第i行为第i个轨迹与其10个邻居
+                # VD size = (vocal_size, 10) Row i contains trajectory i and its 10 neighbors
                 V, Ds, Dt = f["V"][...], f["Ds"][...], f["Dt"][...]
                 V, Ds, Dt = torch.LongTensor(V), torch.FloatTensor(Ds), torch.FloatTensor(Dt)
                 Ds, Dt = self.dist2weight(Ds, self.dist_decay_speed), self.dist2weight(Dt, self.dist_decay_speed)
@@ -594,26 +594,26 @@ class TrajectorySim(nn.Module):
         encoder, decoder, embedding = models
         encoder_hn, H = encoder(*enc_metas, embed_layer=embedding)
         decoder_h0 = encoder.encoder_hn2decoder_h0(encoder_hn)
-        # target去除EOS行后调入decoder
+        # Pass target without EOS row to decoder
         output, decoder_hn = decoder(trg[:, :-1], decoder_h0, H, embed_layer=embedding)
         return output
 
     def genLoss(self, enc_metas, target, models):
         """
-        计算一批训练数据的损失
+        Calculate loss for a batch of training data
 
         :param enc_metas: encode meta
         :param target: (batch, seq_len2)
         :param models: encoder-decoder
-        :return:
+        :return: loss value
         """
         output = self.EncoderDecoder(models, enc_metas, target) #  (seq_len2, batch, hidden_size)
 
         batch = output.size(1)
         loss = 0
-        #  we want to decode target in range [BOS+1:EOS]
+        # We want to decode target in range [BOS+1:EOS]
         target = target.transpose(0, 1)[1:]
-        # generator_batch 32每一次生成的words数目，要求内存
+        # generator_batch 32 number of words generated each time, memory requirement
         # output [max_target_size, 128, 256]
         for o, t in zip(output.split(self.generator_batch),
                         target.split(self.generator_batch)):
@@ -627,9 +627,10 @@ class TrajectorySim(nn.Module):
 
     def disLoss(self, a, p, n, models):
         """
-        计算相似性损失，即三角损失
+        Calculate similarity loss (triplet loss)
 
-        通过a,p,n三组轨迹，经过前向encoder,接着通过encoder_hn2decoder_h0，取最后一层向量作为每组每个轨迹的代表
+        Process a,p,n trajectory groups through encoder, then encoder_hn2decoder_h0,
+        take last layer vector as representation for each trajectory
 
         a (named tuple): anchor data
         p (named tuple): positive data
@@ -649,10 +650,9 @@ class TrajectorySim(nn.Module):
         a_h = encoder.encoder_hn2decoder_h0(a_h)
         p_h = encoder.encoder_hn2decoder_h0(p_h)
         n_h = encoder.encoder_hn2decoder_h0(n_h)
-        # take the last layer as representations (batch, hidden_size * num_directions) (128,256)
+        # Take the last layer as representations (batch, hidden_size * num_directions) (128,256)
         a_h, p_h, n_h = a_h[-1], p_h[-1], n_h[-1]
         return self.triplet_loss(a_h[a_invp], p_h[p_invp], n_h[n_invp])  # (128,256)
-
 
     def forward(self, models, enc_metas, rec_metas, current_iteration_id, *args):
         """
@@ -666,18 +666,18 @@ class TrajectorySim(nn.Module):
             train_loss
         """
         _, _, trg = rec_metas
-        # 计算生成损失+三元判别损失
+        # Calculate generation loss + triplet discriminative loss
         train_gen_loss = self.genLoss(enc_metas, trg, models)
         train_dis_cross, train_dis_inner = torch.tensor(0), torch.tensor(0)
         if self.use_discriminative and current_iteration_id % self.dis_freq == 0:
-            # a和p的轨迹更接近 a.src.size = [max_length,128]
+            # Trajectories a and p are closer
             a, p, n = self.get_apn_cross()
             train_dis_cross = self.disLoss(a, p, n, models)
-            # a,p,n是由同一组128个轨迹采样得到的新的128个下采样轨迹集合
+            # a,p,n are sampled from same 128 trajectories to get new 128 downsampled trajectory sets
             a, p, n = self.get_apn_inner()
             train_dis_inner = self.disLoss(a, p, n, models)
-        # 损失按一定权重相加 train_gen_loss： 使损失尽可能小 discriminative——loss: 使序列尽可能相似
-        # 计算词的平均损失
+        # Add losses with weights - train_gen_loss: minimize loss, discriminative_loss: maximize sequence similarity
+        # Calculate average word loss
         train_gen_loss = train_gen_loss / trg.size(1)
         train_dis_loss = train_dis_cross + train_dis_inner
         train_loss = (1 - self.discriminative_w) * train_gen_loss + self.discriminative_w * train_dis_loss
@@ -685,12 +685,12 @@ class TrajectorySim(nn.Module):
 
     def nll_criterion(self):
         """
-        带权的NLLLoss损失函数， 将编码为0的填充位置的权重置为0
-        :return: 带权损失函数
+        Weighted NLLLoss function, set weight of padding position (encoded as 0) to 0
+        :return: Weighted loss function
         """
         weight = torch.ones(self.vocab_size)
         weight[self.PAD] = 0
-        # sum-loss求和 null-loss取平均值 none显示全部loss
+        # sum-loss: sum, null-loss: average, none: show all losses
         criterion = nn.NLLLoss(weight, reduction='sum')
         return criterion
 
@@ -702,26 +702,26 @@ class TrajectorySim(nn.Module):
         V (vocab_size, k) 18866*10
         D (vocab_size, k) 18866*10
 
-        该评价模型评价每一批128个目标cell的10个邻居对应的输出权重与真实权重的距离 128*10
+        This evaluation model evaluates distance between output weights and true weights
+        for 10 neighbors of each of 128 target cells 128*10
 
-        只考虑每个点的10个邻居
+        Only considers 10 neighbors for each point
         """
-        # 获取128个目标cell的10个邻居
-        # 第一个参数是索引的对象，第二个参数0表示按行索引，1表示按列进行索引，第三个参数是一个tensor，就是索引的序号
+        # Get 10 neighbors for 128 target cells
         indices = torch.index_select(V, 0, target)
-        # 收集输出的128个目标对应的10个邻居的权重，是模型预测出来的权重
+        # Collect weights for 10 neighbors of 128 targets, predicted by model
         outputk = torch.gather(output, 1, indices)
-        # 获取128个目标cell的10个邻居对应的权重，从D中获取，是真实权重
+        # Get weights for 10 neighbors of 128 target cells from D, true weights
         targetk = torch.index_select(D, 0, target)
         return criterion(outputk, targetk)
 
     def dist2weight(self, D, dist_decay_speed=0.8):
         """
-        对于K个邻居，按照距离大小给出权重，公式5中的W
+        Assign weights to K neighbors based on distance, W in formula 5
 
-        :param D: 和topK邻居的距离矩阵
-        :param dist_decay_speed: 衰减指数
-        :return:
+        :param D: Distance matrix with topK neighbors
+        :param dist_decay_speed: Decay exponent
+        :return: Weight matrix
         """
         # D = D.div(100)
         D = torch.exp(-D * dist_decay_speed)
@@ -733,9 +733,9 @@ class TrajectorySim(nn.Module):
 
     def get_apn_cross(self):
         """
-        得到三个batch个数的轨迹集，a,p,n
-        a中的轨迹中心更接近于p中的轨迹
-        :return: 选取的一组a, p, n， 每个均为一个TF对象 ['src', 'lengths', 'trg', 'invp']
+        Get three sets of trajectories with batch size: a,p,n
+        Trajectories in a are closer to those in p
+        :return: Selected a,p,n groups, each is a TF object ['src', 'lengths', 'trg', 'invp']
         """
         def distance(x, y):
             return np.linalg.norm(x[0:2]-y[0:2])
@@ -747,7 +747,7 @@ class TrajectorySim(nn.Module):
 
         for i in range(len(a_src)):
             # a_mta[i] float32[] [id, t]
-            # 如果a,p两个轨迹距离更大，则将p中的轨迹换为n的轨迹
+            # If distance between a,p is larger, swap p with n
             if distance(a_mta[i], p_mta[i]) > distance(a_mta[i], n_mta[i]):
                 p_src[i], n_src[i] = n_src[i], p_src[i]
                 p_trg[i], n_trg[i] = n_trg[i], p_trg[i]
@@ -760,7 +760,7 @@ class TrajectorySim(nn.Module):
 
     def get_apn_inner(self):
         """
-        以一定概率去除一批batch个数轨迹中的点后生成三个轨迹集合a, p，n
+        Generate three trajectory sets a,p,n by removing points with certain probability from batch trajectories
 
         Test Case:
         a, p, n = dataloader.getbatch_discriminative_inner()
@@ -828,12 +828,10 @@ class t2vec(TrajectorySim):
                  criterion_name, dist_decay_speed, timeWeight=0,
                  use_discriminative=use_discriminative, discriminative_w=discriminative_w, dis_freq=10,
                  generator_batch=generator_batch)
-        # 重写
         self.name = f't2vec_vocab{vocab_size}_criterion-{criterion_name}_discriminative{int(use_discriminative)}'
-        '''
-        self.loss_function = self.set_loss()  # 会使用重写的self.set_loss()
+        self.loss_function = self.set_loss()  # Will use overridden self.set_loss()
         self.triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-        # Encoder到Decoder的中间输出输出到词汇表向量的映射
+        # Mapping from encoder-decoder intermediate output to vocabulary vector space
         self.mapping = nn.Sequential(nn.Linear(hidden_size, self.vocab_size),
                                      nn.LogSoftmax(dim=1)) 
 
@@ -843,19 +841,18 @@ class t2vec(TrajectorySim):
         self.knn_vocabs_path = knn_vocabs_path
         self.criterion_name = criterion_name
         self.dist_decay_speed = dist_decay_speed
-        self.timeWeight = 0   # 弃用
+        self.timeWeight = 0   # Deprecated
         self.use_discriminative = use_discriminative
         self.discriminative_w = discriminative_w
         self.dis_freq = 10
         self.generator_batch = generator_batch
-        '''
 
     def set_loss(self):
         """
-        设置KL散度损失函数
+        Set KL divergence loss function
 
-        :param args:  参数设定
-        :return: 设置的损失函数
+        :param args: Parameter settings
+        :return: The configured loss function
         """
         if self.criterion_name == "NLL":
             criterion = self.nll_criterion().to(self.device)
@@ -865,7 +862,7 @@ class t2vec(TrajectorySim):
             assert os.path.isfile(self.knn_vocabs_path), "{} does not exist".format(self.knn_vocabs_path)
             print("Loading vocab distance file {}...".format(self.knn_vocabs_path))
             with h5py.File(self.knn_vocabs_path, 'r') as f:
-                # VD size = (vocal_size, K) 第i行为第i个轨迹与其K个邻居
+                # VD size = (vocal_size, K) Row i contains trajectory i and its K neighbors
                 V, D = f["V"][...], f["D"][...]
                 V, D = torch.LongTensor(V), torch.FloatTensor(D)
                 D = self.dist2weight(D, self.dist_decay_speed)
@@ -885,26 +882,26 @@ class t2vec(TrajectorySim):
             train_loss
         """
         _, _, trg = rec_metas
-        # 计算生成损失+三元判别损失
+        # Calculate generation loss + triplet discriminative loss
         train_gen_loss = self.genLoss(enc_metas, trg, models)
         train_dis_cross, train_dis_inner = torch.tensor(0), torch.tensor(0)
         if self.use_discriminative and current_iteration_id % self.dis_freq == 0:
-            # a和p的轨迹更接近 a.src.size = [max_length,128]
+            # Trajectories a and p are closer, a.src.size = [max_length,128]
             a, p, n = self.get_apn_cross()
             train_dis_cross = self.disLoss(a, p, n, models)
-            # a,p,n是由同一组128个轨迹采样得到的新的128个下采样轨迹集合
+            # a,p,n are sampled from the same group of 128 trajectories to get new 128 downsampled trajectory sets
             a, p, n = self.get_apn_inner()
             train_dis_inner = self.disLoss(a, p, n, models)
-        # 损失按一定权重相加 train_gen_loss： 使损失尽可能小 discriminative——loss: 使序列尽可能相似
+        # Add losses with weights - train_gen_loss: minimize loss, discriminative_loss: make sequences similar
         train_loss = train_gen_loss + self.discriminative_w * (train_dis_cross + train_dis_inner)
         return train_loss
 
     def dist2weight(self, D, dist_decay_speed=0.8):
         """
-        对于K个邻居，按照距离大小给出权重，公式5中的W
+        For K neighbors, assign weights based on distance, W in formula 5
 
-        :param D: 和topK邻居的距离矩阵
-        :param dist_decay_speed: 衰减指数
+        :param D: Distance matrix with topK neighbors
+        :param dist_decay_speed: Decay exponent
         :return:
         """
         D = D.div(100)

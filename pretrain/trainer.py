@@ -12,6 +12,7 @@ from utils import create_if_noexists, next_batch, cal_model_size, BatchPreparer,
 from data import SET_NAMES
 from pretrain.generative_losses import TrajectorySim, t2vec
 
+
 class Trainer:
     """
     Base class of the pre-training helper class.
