@@ -1,4 +1,3 @@
-torch
 scipy
 h5py
 pandas
@@ -11,6 +10,5 @@ scikit-learn
 networkx
 gensim
 node2vec
-torch-scatter
 pytorch-msssim
 PyYAML

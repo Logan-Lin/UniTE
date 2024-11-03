@@ -1,0 +1,59 @@
+- repeat: 1
+  data:
+    name: chengdu
+    meta:
+      - type: trip
+  
+  models:
+    - name: transformer_encoder
+      config:
+        d_model: 64
+        output_size: 64
+        dis_feats: [1]
+        num_embeds: [2505]
+        con_feats: [2]
+    - name: transformer_decoder
+      config:
+        encode_size: 64
+        d_model: 64
+        hidden_size: 128
+        num_layers: 2
+        num_heads: 4
+  
+  pretrain:
+    load: false
+    loss:
+      name: autoreg
+      config:
+        out_dis:
+          feats: [1]
+          num_embeds: [2505]
+        out_con_feats: [2]
+        latent_size: 64
+        dis_weight: 1.0
+        con_weight: 1.0
+    trainer:
+      name: generative
+      config:
+        num_epoch: 5
+        batch_size: 16
+        lr: 1.0e-3
+        enc_meta_i: [0]
+        rec_meta_i: [0]
+  
+  downstream:
+    - task: destination
+      select_models: [0]
+      eval_set: 2
+      config:
+        pre_length: 1
+        finetune: true
+        num_epoch: 20
+        batch_size: 16
+        save_prediction: false
+        lr: 1.0e-3
+        es_epoch: 10
+        meta_types:
+          - trip
+        enc_meta_i: [0]
+        label_meta_i: [0] 

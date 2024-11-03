@@ -64,6 +64,9 @@ def main():
         Raises:
             NotImplementedError: If model name is not recognized
         """
+        # Add global declarations at the start of the function
+        global vocab_size, dist_path, hidden_size
+        
         # Prepare sampler
         sampler = create_augmentation(model_entry.get('augmentation', {'name': 'pass'}))
         
@@ -111,7 +114,6 @@ def main():
             return modules.model.trajectory2vec.Trajectory2vecDecoder(sampler=sampler, **model_config)
         elif model_name == 'trajsim_embedding':
             model = modules.model.trajectorysim.TrajSimEmbed(meta_dir=data.meta_dir, **model_config, pretrain=pretrain)
-            global vocab_size, dist_path
             vocab_size = model.vocab_size
             dist_path = model.dist_path
             return model
@@ -119,12 +121,10 @@ def main():
             return modules.model.trajectorysim.TrajSimEncoder(num_embed=num_roads, sampler=sampler, **model_config)
         elif model_name == 'trajsim_decoder':
             model = modules.model.trajectorysim.TrajSimDecoder(**model_config)
-            global hidden_size
             hidden_size = model.hidden_size
             return model
         elif model_name == 't2vecEmbedding':
             model = modules.model.t2vec.t2vecEmbedding(meta_dir=data.meta_dir, **model_config, pretrain=pretrain)
-            global vocab_size, dist_path
             vocab_size = model.vocab_size
             dist_path = model.dist_path
             return model
@@ -132,7 +132,6 @@ def main():
             return modules.model.t2vec.t2vecEncoder(num_embed=num_roads, sampler=sampler, **model_config)
         elif model_name == 't2vecDecoder':
             model = modules.model.t2vec.t2vecDecoder(**model_config)
-            global hidden_size
             hidden_size = model.hidden_size
             return model
         elif model_name == 'traj2vec_encoder':
@@ -188,6 +187,125 @@ def main():
             return modules.preprocessor.RandomViewSampler(**aug_config)
         else:
             raise NotImplementedError(f'No augmentation called "{aug_name}".')
+
+    def create_loss_functions(loss_entries, models):
+        """
+        Create loss functions based on configuration entries.
+        
+        Args:
+            loss_entries (dict or list): Loss function configurations
+            models (list): List of model instances
+            
+        Returns:
+            list or object: Single loss function or list of loss functions
+            
+        Raises:
+            NotImplementedError: If loss function name is not recognized
+        """
+        # Handle single loss entry case
+        if isinstance(loss_entries, dict):
+            loss_entries = [loss_entries]
+            single_loss = True
+        else:
+            single_loss = False
+
+        loss_funcs = []
+        for loss_entry in loss_entries:
+            loss_name = loss_entry['name']
+            loss_param = loss_entry.get('config', {})
+            
+            if loss_name == 'infonce':
+                loss_funcs.append(contrastive_losses.InfoNCE(**loss_param))
+            elif loss_name == 'mec':
+                loss_funcs.append(contrastive_losses.MEC(**loss_param,
+                                                       teachers=(copy.deepcopy(model) for model in models)))
+            elif loss_name == 'ddpm':
+                loss_funcs.append(generative_losses.DDPM(**loss_param))
+            elif loss_name == 'autoreg':
+                loss_funcs.append(generative_losses.AutoRegressive(**loss_param))
+            elif loss_name == 'mlm':
+                loss_funcs.append(generative_losses.MLM(**loss_param))
+            elif loss_name == 'gmvsae':
+                loss_funcs.append(generative_losses.GMVSAE(**loss_param))
+            elif loss_name == 'simclr':
+                loss_funcs.append(contrastive_losses.SimCLR(**loss_param))
+            elif loss_name == 'trajectory2vec':
+                loss_funcs.append(generative_losses.Trajectory2Vec(**loss_param))
+            elif loss_name == 'trajsim':
+                loss_funcs.append(generative_losses.TrajectorySim(device=device, 
+                                                                hidden_size=hidden_size,
+                                                                vocab_size=vocab_size,
+                                                                knn_vocabs_path=dist_path, 
+                                                                **loss_param))
+            elif loss_name == 't2vec':
+                loss_funcs.append(generative_losses.t2vec(device=device,
+                                                        hidden_size=hidden_size,
+                                                        vocab_size=vocab_size,
+                                                        knn_vocabs_path=dist_path,
+                                                        **loss_param))
+            elif loss_name == 'trembr':
+                loss_funcs.append(generative_losses.Trembr(num_roads=num_roads, **loss_param))
+            elif loss_name == 'cae':
+                loss_funcs.append(generative_losses.ConvolutionalAutoRegressive(**loss_param))
+            elif loss_name == 'geoconstrains_word2vec':
+                loss_funcs.append(contrastive_losses.GeoConstrainWord2Vec(**loss_param))
+            elif loss_name == 'robustDAA':
+                loss_funcs.append(generative_losses.RobustDAA(**loss_param))
+            elif loss_name == 'trajode':
+                loss_funcs.append(generative_losses.TrajODE(**loss_param))
+            elif loss_name == 'maerr':
+                loss_funcs.append(generative_losses.MAERR(**loss_param))
+            else:
+                raise NotImplementedError(f'No loss function called "{loss_name}".')
+
+        return loss_funcs[0] if single_loss else loss_funcs
+
+    def create_pretrainer(pretrainer_entry, data, models, loss_func, device, datetime_key, num_entry, repeat_i):
+        """
+        Create pretraining trainer based on configuration.
+        
+        Args:
+            pretrainer_entry (dict): Trainer configuration
+            data (Data): Dataset object
+            models (list): List of model instances
+            loss_func: Loss function(s)
+            device (str): Device to run training on
+            datetime_key (str): Unique datetime identifier
+            num_entry (int): Current experiment index
+            repeat_i (int): Current repetition index
+            
+        Returns:
+            Trainer: Initialized trainer instance
+            
+        Raises:
+            NotImplementedError: If trainer name is not recognized
+        """
+        pretrainer_name = pretrainer_entry['name']
+        pretrainer_config = pretrainer_entry.get('config', {})
+        
+        # Common parameters for all trainers
+        common_params = {
+            "data": data,
+            "models": models,
+            "loss_func": loss_func,
+            "device": device,
+            "log_name_key": datetime_key + f'_e{num_entry}_r{repeat_i}'
+        }
+        
+        if pretrainer_name == 'contrastive':
+            return PreTrainer.ContrastiveTrainer(**common_params, **pretrainer_config)
+        elif pretrainer_name == 'generative':
+            return PreTrainer.GenerativeTrainer(**common_params, **pretrainer_config)
+        elif pretrainer_name == 'generativeiteration':
+            return PreTrainer.GenerativeIterationTrainer(**common_params, **pretrainer_config)
+        elif pretrainer_name == 'momentum':
+            return PreTrainer.MomentumTrainer(**common_params, **pretrainer_config)
+        elif pretrainer_name == 'multiple':
+            return PreTrainer.MultiTrainer(**common_params, **pretrainer_config)
+        elif pretrainer_name == 'ADMM':
+            return PreTrainer.ADMMTrainer(**common_params, **pretrainer_config)
+        else:
+            raise NotImplementedError(f'No trainer called "{pretrainer_name}".')
 
     def setup_pretraining(entry, models, data, device, datetime_key, num_entry, repeat_i):
         """
@@ -256,13 +374,84 @@ def main():
                 models = pre_trainer.get_models()
 
             down_trainer = setup_downstream_task(down_entry, models, data, device, pre_trainer.BASE_KEY,
-                                              datetime_key, num_entry, repeat_i)
+                                              datetime_key, num_entry, repeat_i, data.data_info['num_road'])
 
             if down_entry.get('load', False):
                 down_trainer.load_models()
             else:
                 down_trainer.train()
             down_trainer.eval(down_entry['eval_set'])
+
+    def setup_downstream_task(down_entry, models, data, device, base_key, datetime_key, num_entry, repeat_i, num_roads):
+        """
+        Set up downstream task trainer based on configuration.
+        
+        Args:
+            down_entry (dict): Downstream task configuration
+            models (list): List of pretrained models
+            data (Data): Dataset object
+            device (str): Device to run training on
+            base_key (str): Base key for model loading
+            datetime_key (str): Unique datetime identifier
+            num_entry (int): Current experiment index
+            repeat_i (int): Current repetition index
+            
+        Returns:
+            Trainer: Initialized downstream task trainer
+            
+        Raises:
+            NotImplementedError: If task name is not recognized
+        """
+        # Select models and calculate embedding size
+        down_models = [models[i] for i in down_entry['select_models']]
+        down_embed_size = sum([model.output_size for model in down_models])
+        
+        # Get task configuration
+        down_task = down_entry['task']
+        down_config = down_entry.get('config', {})
+        predictor_entry = down_entry.get('predictor', {})
+        predictor_config = predictor_entry.get('config', {})
+        
+        # Common parameters for all tasks
+        common_params = {
+            "data": data,
+            "models": down_models,
+            "device": device,
+            "base_name": base_key,
+            "log_name_key": datetime_key + f'_e{num_entry}_r{repeat_i}'
+        }
+        
+        # Create appropriate predictor and trainer based on task
+        if down_task == 'classification':
+            predictor = DownPredictor.FCPredictor(
+                input_size=down_embed_size,
+                output_size=data.data_info['num_class'],
+                **predictor_config
+            )
+            return task.Classification(predictor=predictor, **common_params, **down_config)
+        
+        elif down_task == 'destination':
+            predictor = DownPredictor.FCPredictor(
+                input_size=down_embed_size,
+                output_size=num_roads,
+                **predictor_config
+            )
+            return task.Destination(predictor=predictor, **common_params, **down_config)
+        
+        elif down_task == 'search':
+            predictor = DownPredictor.NonePredictor()
+            return task.Search(predictor=predictor, **common_params, **down_config)
+        
+        elif down_task == 'tte':
+            predictor = DownPredictor.FCPredictor(
+                input_size=down_embed_size,
+                output_size=1,
+                **predictor_config
+            )
+            return task.TTE(predictor=predictor, **common_params, **down_config)
+        
+        else:
+            raise NotImplementedError(f'No downstream task called "{down_task}".')
 
     # Main execution flow
     args, device = parse_args()
@@ -290,8 +479,8 @@ def main():
         # Save config
         conf_save_dir = os.path.join(data.base_path, 'config')
         utils.create_if_noexists(conf_save_dir)
-        with open(os.path.join(conf_save_dir, f'{datetime_key}_e{num_entry}.json'), 'w') as fp:
-            json.dump(entry, fp)
+        with open(os.path.join(conf_save_dir, f'{datetime_key}_e{num_entry}.yaml'), 'w') as fp:
+            yaml.dump(entry, fp)
 
         # Run experiments
         num_repeat = entry.get('repeat', 1)

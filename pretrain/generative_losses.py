@@ -22,7 +22,7 @@ from utils import pad_arrays_pair, next_batch, random_subseq, next_batch_recycle
 
 
 class AutoRegressive(nn.Module):
-    def __init__(self, flat_valid, out_dis, out_con_feats, dis_weight, con_weight, latent_size):
+    def __init__(self, out_dis, out_con_feats, dis_weight, con_weight, latent_size, flat_valid=True):
         super().__init__()
         self.name = f'AutoReg_fv{int(flat_valid)}_latent{latent_size}' + \
             f'_dis-{dis_weight}-' + ','.join(map(str, out_dis['feats'])) + \
@@ -56,7 +56,7 @@ class AutoRegressive(nn.Module):
         h = h + self.con_embed(x[..., -len(self.out_con_feats):])
         return h
 
-    def forward(self, models, enc_metas, rec_metas, *args):
+    def forward(self, models, enc_metas, rec_metas, *args, **kwargs):
         encoder, decoder = models
         # Feed encode metas to the encoder.
         encode = encoder(*enc_metas)
@@ -134,9 +134,9 @@ class MLM(nn.Module):
                                      nn.LeakyReLU(inplace=True),
                                      nn.Linear(latent_size // 4, len(out_con_feats)))
 
-    def forward(self, models, common_meta, enc_metas, rec_metas):
+    def forward(self, models, enc_metas, rec_metas, *args, **kwargs):
         model, = models
-        latent = model(*enc_metas, *common_meta, pretrain=True)
+        latent = model(*enc_metas, pretrain=True)
         latent = torch.where(torch.isnan(latent), torch.full_like(latent, 1e-4), latent)
 
         trip, lengths = rec_metas[0], rec_metas[1]

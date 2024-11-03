@@ -19,6 +19,8 @@ From: ubuntu:22.04
 
     python3 -m venv ./venv --system-site-packages
     source ./venv/bin/activate
+    pip install torch torchvision torchaudio
+    pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.4.0+cu124.html
     pip install -r requirements.txt
 
 %environment

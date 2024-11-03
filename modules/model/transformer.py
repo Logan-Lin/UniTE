@@ -204,7 +204,7 @@ class TransformerEncoder(Encoder):
         encoder_layer = nn.TransformerEncoderLayer(d_model, num_heads, hidden_size, dropout=0.1, batch_first=True)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers)
 
-    def forward(self, trip, valid_len):
+    def forward(self, trip, valid_len, **kwargs):
         B, L, E_in = trip.shape
 
         src_mask = repeat(torch.arange(end=L, device=trip.device),

@@ -32,7 +32,6 @@ CLASS_COL = 'driver'
 SET_NAMES = [(0, 'train'), (1, 'val'), (2, 'test')]
 MIN_TRIP_LEN = 6
 MAX_TRIP_LEN = 120
-TARGET_SAMPLE_RATE = 15
 TRIP_COLS = ['tod', 'road', 'road_prop', 'lng', 'lat', 'weekday', 'seq_i', 'seconds']
 
 DATASET_PATH = os.environ['DATASET_PATH']
@@ -73,6 +72,10 @@ class Data:
         # self.trips = pd.merge(self.trips, self.road_info[['road', 'lng', 'lat']], on='road', how='left')
         self.network_info = None
         self.network = None
+
+        # Convert time column to datetime if it's float
+        if pd.api.types.is_float_dtype(self.trips['time']):
+            self.trips['time'] = pd.to_datetime(self.trips['time'])
 
         if self.road_type == 'grid':
             self.project_to_grid()
@@ -168,8 +171,7 @@ class Data:
         valid_trip_id = []
         for _, group in tqdm(trips.groupby('trip'), desc='Filtering trips', total=select_trip_id.shape[0], leave=False):
             if (not group.isna().any().any()) and group.shape[0] >= MIN_TRIP_LEN and group.shape[0] <= MAX_TRIP_LEN:
-                if ((group['seconds'] - group.shift(1)['seconds']).iloc[1:] == TARGET_SAMPLE_RATE).all():
-                    valid_trip_id.append(group.iloc[0]['trip'])
+                valid_trip_id.append(group.iloc[0]['trip'])
         return valid_trip_id
 
     def dump_meta(self, meta_type, select_set):
@@ -1638,6 +1640,7 @@ def main():
             data.dump_meta(type, int(i))
             # Test if we can load meta from the file
             meta = data.load_meta(type, i)
+    print('Done!')
 
 
 if __name__ == '__main__':
