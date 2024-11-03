@@ -68,7 +68,7 @@ def main():
         global vocab_size, dist_path, hidden_size
         
         # Prepare sampler
-        sampler = create_augmentation(model_entry.get('augmentation', {'name': 'pass'}))
+        sampler = create_preprocessor(model_entry.get('preprocessor', {'name': 'pass'}))
         
         # Prepare model config
         model_config = model_entry.get('config', {})
@@ -157,12 +157,12 @@ def main():
         else:
             raise NotImplementedError(f'No model called "{model_name}".')
 
-    def create_augmentation(aug_entry):
+    def create_preprocessor(preprocessor_entry):
         """
         Create data augmentation sampler based on configuration.
         
         Args:
-            aug_entry (dict): Augmentation configuration containing name and parameters
+            preprocessor_entry (dict): Preprocessor configuration containing name and parameters
             
         Returns:
             Sampler: Initialized augmentation sampler
@@ -170,23 +170,23 @@ def main():
         Raises:
             NotImplementedError: If augmentation name is not recognized
         """
-        aug_name = aug_entry['name']
-        aug_config = aug_entry.get('config', {})
+        preprocessor_name = preprocessor_entry['name']
+        preprocessor_config = preprocessor_entry.get('config', {})
         
-        if aug_name == 'pass':
+        if preprocessor_name == 'pass':
             return modules.preprocessor.PassSampler()
-        elif aug_name == 'khop':
-            return modules.preprocessor.KHopSampler(**aug_config)
-        elif aug_name == 'index':
-            return modules.preprocessor.IndexSampler(**aug_config)
-        elif aug_name == 'pool':
-            return modules.preprocessor.PoolSampler(**aug_config)
-        elif aug_name == 'Trajectory2VecSampler':
-            return modules.preprocessor.Trajectory2VecSampler(**aug_config)
-        elif aug_name == 'random':
-            return modules.preprocessor.RandomViewSampler(**aug_config)
+        elif preprocessor_name == 'khop':
+            return modules.preprocessor.KHopSampler(**preprocessor_config)
+        elif preprocessor_name == 'index':
+            return modules.preprocessor.IndexSampler(**preprocessor_config)
+        elif preprocessor_name == 'pool':
+            return modules.preprocessor.PoolSampler(**preprocessor_config)
+        elif preprocessor_name == 'Trajectory2VecSampler':
+            return modules.preprocessor.Trajectory2VecSampler(**preprocessor_config)
+        elif preprocessor_name == 'random':
+            return modules.preprocessor.RandomViewSampler(**preprocessor_config)
         else:
-            raise NotImplementedError(f'No augmentation called "{aug_name}".')
+            raise NotImplementedError(f'No preprocessor called "{preprocessor_name}".')
 
     def create_loss_functions(loss_entries, models):
         """
@@ -334,7 +334,7 @@ def main():
         pretrain_entry = entry['pretrain']
         loss_func = create_loss_functions(pretrain_entry['loss'], models)
         pre_trainer = create_pretrainer(pretrain_entry['trainer'], data, models, loss_func, device, 
-                                      datetime_key, num_entry, repeat_i)
+                                        datetime_key, num_entry, repeat_i)
 
         # Handle training or loading
         if pretrain_entry.get('load', False):
@@ -374,7 +374,7 @@ def main():
                 models = pre_trainer.get_models()
 
             down_trainer = setup_downstream_task(down_entry, models, data, device, pre_trainer.BASE_KEY,
-                                              datetime_key, num_entry, repeat_i, data.data_info['num_road'])
+                                                 datetime_key, num_entry, repeat_i, data.data_info['num_road'])
 
             if down_entry.get('load', False):
                 down_trainer.load_models()
@@ -494,11 +494,11 @@ def main():
             
             # Handle pretraining
             pre_trainer, models = setup_pretraining(entry, models, data, device, datetime_key, 
-                                                  num_entry, repeat_i)
+                                                    num_entry, repeat_i)
             
             # Run downstream tasks
             run_downstream_tasks(entry, pre_trainer, models, data, device, datetime_key, 
-                               num_entry, repeat_i)
+                                 num_entry, repeat_i)
 
 if __name__ == "__main__":
     main()

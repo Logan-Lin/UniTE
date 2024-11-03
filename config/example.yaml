@@ -1,19 +1,40 @@
+# Number of times to repeat this experiment
 - repeat: 1
   data:
+    # Dataset name
     name: chengdu
     meta:
+      # Type of trajectory data to use
       - type: trip
   
   models:
+    # Transformer encoder for trajectory embedding
     - name: transformer_encoder
       config:
+        # Base dimension for transformer model
         d_model: 64
+        # Output embedding dimension
         output_size: 64
+        # Discrete feature columns (road IDs)
         dis_feats: [1]
+        # Number of unique values for each discrete feature
         num_embeds: [2505]
+        # Continuous feature columns (e.g., time, distance)
         con_feats: [2]
+      # Preprocessor for trajectory data
+      preprocessor:
+        # Type of preprocessor to use
+        name: khop
+        config:
+          # Jump size for k-hop sampling
+          jump: 2
+          # Select every k-th point
+          select: 1
+
+    # Decoder for trajectory reconstruction
     - name: transformer_decoder
       config:
+        # Input embedding dimension from encoder
         encode_size: 64
         d_model: 64
         hidden_size: 128
@@ -21,39 +42,53 @@
         num_heads: 4
   
   pretrain:
+    # Whether to load pre-trained weights
     load: false
     loss:
+      # Autoregressive loss for trajectory reconstruction
       name: autoreg
       config:
         out_dis:
+          # Output discrete features (road IDs)
           feats: [1]
           num_embeds: [2505]
+        # Output continuous features
         out_con_feats: [2]
         latent_size: 64
+        # Weights for discrete/continuous reconstruction loss
         dis_weight: 1.0
         con_weight: 1.0
     trainer:
+      # Generative pre-training approach
       name: generative
       config:
         num_epoch: 5
         batch_size: 16
         lr: 1.0e-3
+        # Indices for encoder/decoder meta features
         enc_meta_i: [0]
         rec_meta_i: [0]
   
   downstream:
+    # Destination prediction task
     - task: destination
+      # Use first model (encoder) for prediction
       select_models: [0]
+      # Use test set for evaluation
       eval_set: 2
       config:
+        # Number of points to use for prediction
         pre_length: 1
+        # Whether to fine-tune pre-trained model
         finetune: true
         num_epoch: 20
         batch_size: 16
         save_prediction: false
         lr: 1.0e-3
+        # Early stopping patience
         es_epoch: 10
         meta_types:
           - trip
+        # Meta feature indices for encoder and labels
         enc_meta_i: [0]
-        label_meta_i: [0] 
+        label_meta_i: [0]
