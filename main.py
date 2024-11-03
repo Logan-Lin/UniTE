@@ -5,6 +5,7 @@ import copy
 
 import torch
 from torch.cuda import is_available as cuda_available
+import yaml
 
 from data import Data
 from pretrain import trainer as PreTrainer, generative_losses, contrastive_losses
@@ -24,7 +25,7 @@ def main():
             - device_string is 'cuda:0' or 'cpu' depending on availability
         """
         parser = ArgumentParser()
-        parser.add_argument('-c', '--config', help='name of the config file to use', type=str, required=True)
+        parser.add_argument('-c', '--config', help='path of the config file to use', type=str, required=True)
         parser.add_argument('--cuda', help='index of the cuda device to use', type=int, default=0)
         args = parser.parse_args()
         
@@ -270,8 +271,15 @@ def main():
     torch.autograd.set_detect_anomaly(True)
 
     # Load config file
-    with open(f'config/{args.config}.json', 'r') as fp:
-        config = json.load(fp)
+    if args.config.endswith('.json'):
+        with open(args.config, 'r') as fp:
+            config = json.load(fp)
+    elif args.config.endswith('.yaml') or args.config.endswith('.yml'):
+        import yaml
+        with open(args.config, 'r') as fp:
+            config = yaml.safe_load(fp)
+    else:
+        raise ValueError(f"Config file must be .json, .yaml or .yml, got {args.config}")
 
     for num_entry, entry in enumerate(config):
         print(f'\n{"=" * 30}\n===={num_entry+1}/{len(config)} experiment entry====')

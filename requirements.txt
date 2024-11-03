@@ -13,3 +13,4 @@ gensim
 node2vec
 torch-scatter
 pytorch-msssim
+PyYAML

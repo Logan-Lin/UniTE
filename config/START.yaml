@@ -1,0 +1,61 @@
+- repeat: 1
+  data:
+    name: cd23_small
+  models:
+    - name: bert
+      config:
+        d_model: 128
+        num_layers: 3
+        hidden_size: 256
+        num_heads: 8
+        output_size: 128
+        dis_feats: [5, 7]
+        num_embeds: [7, 1440]
+        con_feats: []
+        road_feat: 1
+        token_feat: 8
+  pretrain:
+    load: false
+    loss:
+      - name: simclr
+        config:
+          embed_dim: 128
+          similarity: inner
+          temperature: 0.05
+      - name: mlm
+        config:
+          out_dis:
+            feats: [1]
+            num_embeds: [2505]
+          out_con_feats: []
+          dis_weight: 1
+          con_weight: 1
+          latent_size: 128
+    trainer:
+      name: multiple
+      config:
+        num_epoch: 30
+        batch_size: 512
+        lr: 1.0e-4
+        meta_types:
+          - mlm-60-timemat
+          - trim-0.1-timemat
+          - shift-0.15-timemat
+        contra_meta_i: [1, 2]
+        gen_enc_meta_i: [0]
+        gen_rec_meta_i: [0]
+        loss_coef: [0.4, 0.6]
+  downstream:
+    - task: destination
+      select_models: [0]
+      eval_set: 2
+      config:
+        finetune: false
+        num_epoch: 100
+        batch_size: 512
+        save_prediction: false
+        lr: 1.0e-3
+        es_epoch: 10
+        pre_length: 3
+        meta_types:
+          - resample-60-timemat 
