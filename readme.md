@@ -170,17 +170,18 @@ Depending on what kind of data our pre-training process requires, some meta data
 First, we need to specify the location of the raw dataset and the directory to save the pre-processed meta data. You can adjust the `META_PATH` and `DATASET_PATH` based on your needs.
 
 ```bash
-export META_PATH=cache
-export DATASET_PATH=src/sample
+export META_PATH=../cache
+export DATASET_PATH=sample
 ```
 
 Then, we can pre-process the dataset by running the following command:
 
 ```bash
-singularity run --nv unite.sif src/data.py --name chengdu -t trip 
+cd src
+singularity run --nv ../unite.sif data.py --name chengdu -t trip 
 ```
 
-The pre-processed meta data will be saved in the `META_PATH` directory. Here, it will be saved as three files `cache/meta/chengdu/trip_{0,1,2}.npz`, representing the train/val/test sets.
+The pre-processed meta data will be saved in the `META_PATH` directory. Here, it will be saved as three files `../cache/meta/chengdu/trip_{0,1,2}.npz`, representing the train/val/test sets.
 
 ### Prepare Configuration Files
 
@@ -300,7 +301,8 @@ The result configuration file is also provided as `config/example.yaml`.
 To run the main script with the configuration file we just prepared, use the following command:
 
 ```bash
-singularity run --nv unite.sif src/main.py -c src/config/example.yaml
+cd src
+singularity run --nv ../unite.sif main.py -c config/example.yaml
 ```
 
 ### Explore Components
