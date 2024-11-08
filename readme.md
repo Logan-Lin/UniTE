@@ -301,7 +301,6 @@ The result configuration file is also provided as `config/example.yaml`.
 To run the main script with the configuration file we just prepared, use the following command:
 
 ```bash
-cd src
 singularity run --nv ../unite.sif main.py -c config/example.yaml
 ```
 

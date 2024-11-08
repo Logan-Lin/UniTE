@@ -47,15 +47,13 @@ def main():
         data.load_stat()
         return data
 
-    def create_model(model_entry, data, num_roads, num_classes, pretrain):
+    def create_model(model_entry, data, pretrain):
         """
         Create model instance based on configuration.
         
         Args:
             model_entry (dict): Model configuration containing name and parameters
             data (Data): Dataset object for loading metadata
-            num_roads (int): Number of unique road segments
-            num_classes (int): Number of classes for classification tasks
             pretrain (bool): Whether the model is pretrained
             
         Returns:
@@ -65,7 +63,7 @@ def main():
             NotImplementedError: If model name is not recognized
         """
         # Add global declarations at the start of the function
-        global vocab_size, dist_path, hidden_size
+        global vocab_size, dist_path, hidden_size, num_roads, num_class
         
         # Prepare sampler
         sampler = create_preprocessor(model_entry.get('preprocessor', {'name': 'pass'}))
@@ -188,7 +186,7 @@ def main():
         else:
             raise NotImplementedError(f'No preprocessor called "{preprocessor_name}".')
 
-    def create_loss_functions(loss_entries, models):
+    def create_loss_functions(loss_entries, models, device):
         """
         Create loss functions based on configuration entries.
         
@@ -202,6 +200,8 @@ def main():
         Raises:
             NotImplementedError: If loss function name is not recognized
         """
+        global num_roads, hidden_size, vocab_size, dist_path
+
         # Handle single loss entry case
         if isinstance(loss_entries, dict):
             loss_entries = [loss_entries]
@@ -332,7 +332,7 @@ def main():
             return pre_trainer, models
 
         pretrain_entry = entry['pretrain']
-        loss_func = create_loss_functions(pretrain_entry['loss'], models)
+        loss_func = create_loss_functions(pretrain_entry['loss'], models, device)
         pre_trainer = create_pretrainer(pretrain_entry['trainer'], data, models, loss_func, device, 
                                         datetime_key, num_entry, repeat_i)
 
@@ -486,10 +486,12 @@ def main():
         num_repeat = entry.get('repeat', 1)
         for repeat_i in range(num_repeat):
             print(f'\n----{num_entry+1}/{len(config)} experiment entry, {repeat_i+1}/{num_repeat} repeat----\n')
+            global num_roads, num_class
+            num_roads = data.data_info['num_road']
+            num_class = data.data_info['num_class']
             
             # Create models
-            models = [create_model(model_entry, data, data.data_info['num_road'], 
-                                   data.data_info['num_class'], 'pretrain' in entry) 
+            models = [create_model(model_entry, data, 'pretrain' in entry) 
                       for model_entry in entry['models']]
             
             # Handle pretraining
