@@ -68,6 +68,8 @@ The following sections explain these components in detail.
 
 The raw trajectory datasets store the original trajectory sequences in `pandas HDF5Store` format. A small sample dataset is provided in the `/sample/chengdu.h5` file, which is also useful for quick debugging and also serves as a template for users to prepare their own datasets.
 
+You can find the full datasets in [this link](https://drive.google.com/drive/folders/1cWT_wER-VzUZ0eoneZvShNgoeTlLQYpr?usp=drive_link).
+
 Each `HDF5` file contains one dataset, with three keys (dataframes) stored in one file:
 
 - `trips`: The trajectory sequences.
