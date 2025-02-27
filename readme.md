@@ -2,7 +2,7 @@
 
 Companion code for the paper: *UniTE: A Survey and Unified Pipeline for Pre-training Spatiotemporal Trajectory Embeddings*
 
-Preprint Paper: [arXiv](https://arxiv.org/abs/2407.12550)
+Preprint Paper: [arXiv](https://arxiv.org/abs/2407.12550); Published Paper: [IEEE](https://www.computer.org/csdl/journal/tk/2025/03/10818577/236nBe0DGDu)
 
 ## Introduction
 
