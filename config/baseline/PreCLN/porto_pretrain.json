@@ -1,0 +1,114 @@
+[
+    {
+        "repeat": 3,
+        "data": {
+            "name": "porto"
+        },
+        "models": [
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 512,
+                    "num_layers": 3,
+                    "hidden_size": 512,
+                    "num_heads": 8,
+                    "output_size": 512,
+                    "road_col": 1,
+                    "embed_type": "road",
+                    "embed_para": 2505
+                }
+            },
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 512,
+                    "num_layers": 3,
+                    "hidden_size": 512,
+                    "num_heads": 8,
+                    "output_size": 512,
+                    "road_col": 0,
+                    "embed_type": "quadkey",
+                    "embed_para": 5
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "simclr",
+                    "config": {
+                        "embed_dim": 512,
+                        "similarity": "inner",
+                        "temperature": 0.05
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "contrastive",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 32,
+                    "lr": 0.0002,
+                    "cache_epoches": true,
+                    "meta_types": [
+                        "trip",
+                        "quadkey-5",
+                        "classbatch",
+                        "timefea"
+                    ],
+                    "contra_meta_i": [
+                        0, 2, 3,
+                        1, 2, 3
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip",
+                        "classbatch",
+                        "timefea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "sim_indices": [
+                        "ksegsimidx-1000-10000"
+                    ]
+                }
+            }
+        ]
+    }
+]

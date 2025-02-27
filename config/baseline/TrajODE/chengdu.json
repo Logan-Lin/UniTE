@@ -1,0 +1,153 @@
+[
+    {
+        "repeat": 5,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "stode",
+                "config": {
+                    "input_cols": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rnn_hidden_size": 32,
+                    "ode_hidden_size": 32,
+                    "cnf_width": 4,
+                    "output_size": 32,
+                    "ode_flag": false
+                }
+            },
+            {
+                "name": "trajode_decoder",
+                "config": {
+                    "encode_size": 32,
+                    "rnn_hidden_size": 32,
+                    "ode_hidden_size": 32,
+                    "decode_size": 4,
+                    "cnf_width": 4,
+                    "ode_flag": true,
+                    "cnf_flag": true
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "trajode",
+                "config": {
+                    "flat_valid": true,
+                    "input_cols": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "decode_size": 4,
+                    "embed_dim": 32,
+                    "num_class": 3,
+                    "elbo_weight": 5e-4,
+                    "cnf_flag": true
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 2,
+                    "batch_size": 128,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "speedacc"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 30,
+                    "batch_size": 512,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 1,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            },
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 30,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 30,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            },
+            {
+                "task": "classification",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 30,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "class"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

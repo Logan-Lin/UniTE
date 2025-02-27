@@ -1,0 +1,51 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "porto"
+        },
+        "models": [
+            {
+                "name": "geoconstrains_skipgram",
+                "config": {
+                    "d_model": 100,
+                    "output_size": 100,
+                    "dis_feats": [
+                        1
+                    ],
+                    "num_embeds": [
+                        2225
+                    ]
+                }
+            }
+        ],
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

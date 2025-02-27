@@ -1,0 +1,80 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "maerrcdvit",
+                "config": {
+                    "num_time_tokens": 1440,
+                    "road_col": 1,
+                    "time_col": 7,
+                    "num_patches": 120,
+                    "in_chans": 1,
+                    "embed_dim": 128,
+                    "depth": 12,
+                    "num_heads": 8,
+                    "decoder_embed_dim": 128,
+                    "decoder_depth": 1,
+                    "decoder_num_heads": 8
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "maerr",
+                "config": {
+                    "mask_ratio1": 0.7,
+                    "mask_ratio2": 0.8
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "cache_epoches": true,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "sim_indices": [
+                        "ksegsimidx-1000-10000"
+                    ]
+                }
+            }
+        ]
+    }
+]

@@ -1,0 +1,149 @@
+[
+    {
+        "repeat": 2,
+        "data": {
+            "name": "Chengdu",
+            "meta": [
+                {
+                    "type": "trip"
+                }
+            ]
+        },
+        "models": [
+            {
+                "name": "rnn_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "road_col": 1,
+                    "aux_cols": [
+                        0
+                    ],
+                    "d_model": 64,
+                    "hidden_size": 128,
+                    "num_layers": 4,
+                    "output_size": 64,
+                    "variational": false
+                }
+            },
+            {
+                "name": "rnn_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "road_col": 1,
+                    "aux_cols": [
+                        0
+                    ],
+                    "encode_size": 64,
+                    "d_model": 64,
+                    "hidden_size": 128,
+                    "num_layers": 4
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "autoreg",
+                "config": {
+                    "paired": true
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 128,
+                    "lr": 1e-3
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5
+                }
+            }
+        ]
+    },
+    {
+        "repeat": 2,
+        "data": {
+            "name": "Chengdu",
+            "meta": [
+                {
+                    "type": "trip"
+                }
+            ]
+        },
+        "models": [
+            {
+                "name": "rnn_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "road_col": 1,
+                    "d_model": 64,
+                    "hidden_size": 128,
+                    "num_layers": 4,
+                    "output_size": 64,
+                    "variational": false
+                }
+            },
+            {
+                "name": "rnn_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "road_col": 1,
+                    "encode_size": 64,
+                    "d_model": 64,
+                    "hidden_size": 128,
+                    "num_layers": 4
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "autoreg",
+                "config": {
+                    "paired": true
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 128,
+                    "lr": 1e-3
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10
+                }
+            }
+        ]
+    }
+]

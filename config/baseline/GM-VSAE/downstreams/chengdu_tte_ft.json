@@ -1,0 +1,91 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu",
+            "road_type": "grid"
+        },
+        "models": [
+            {
+                "name": "gmvsae_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "grid_col": 1,
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "rnn_output_size": 256,
+                    "num_cluster": 5,
+                    "output_size": 256
+                }
+            },
+            {
+                "name": "gmvsae_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "grid_col": 1,
+                    "encode_size": 256,
+                    "d_model": 128,
+                    "hidden_size": 128
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "gmvsae",
+                "config": {
+                    "num_cluster": 5,
+                    "rnn_dim": 128,
+                    "embed_size": 256,
+                    "pretrain": true
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 100,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "cache_epoches": true,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

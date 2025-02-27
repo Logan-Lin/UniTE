@@ -1,0 +1,116 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "small_chengdu"
+        },
+        "models": [
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "embed_type": "road",
+                    "embed_para": 8626
+                }
+            },
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 1,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "embed_type": "quadkey",
+                    "embed_para": 20
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "simclr",
+                    "config": {
+                        "embed_dim": 128,
+                        "similarity": "inner",
+                        "temperature": 0.05
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "contrastive",
+                "config": {
+                    "num_epoch": 30,
+                    "batch_size": 32,
+                    "lr": 0.001,
+                    "meta_types": [
+                        "trip",
+                        "quadkey-20",
+                        "classbatch",
+                        "timefea"
+                    ],
+                    "contra_meta_i": [
+                        0, 2, 3,
+                        1, 2, 3
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 10,
+                    "batch_size": 512,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 1,
+                    "meta_types": [
+                        "trip",
+                        "classbatch",
+                        "timefea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "label_meta_i": [
+                        0,
+                        1,
+                        2
+                    ]
+                }
+            }
+        ]
+    }
+]

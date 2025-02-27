@@ -1,0 +1,108 @@
+[
+    {
+        "repeat": 3,
+        "data": {
+            "name": "chengdu",
+            "road_type": "grid"
+        },
+        "models": [
+            {
+                "name": "cae_encoder",
+                "config": {
+                    "num_h": 64,
+                    "num_w": 64,
+                    "channels": [
+                        1,
+                        16,
+                        16,
+                        8,
+                        8
+                    ],
+                    "kernel_sizes": [
+                        9,
+                        7,
+                        5,
+                        3
+                    ],
+                    "output_size": 256
+                }
+            },
+            {
+                "name": "cae_decoder",
+                "config": {
+                    "num_h": 64,
+                    "num_w": 64,
+                    "channels": [
+                        8,
+                        8,
+                        16,
+                        16,
+                        1
+                    ],
+                    "kernel_sizes": [
+                        3,
+                        5,
+                        7,
+                        9
+                    ],
+                    "encode_size": 256
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "cae",
+                    "config": {
+                        "recovery_weight": 0.15
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 256,
+                    "lr": 1e-3,
+                    "cache_epoches": true,
+                    "meta_types": [
+                        "trajimage-1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trajimage-1"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "sim_indices": [
+                        "ksegsimidx-1000-10000"
+                    ]
+                }
+            }
+        ]
+    }
+]

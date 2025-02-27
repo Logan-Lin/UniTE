@@ -1,0 +1,102 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "small_chengdu"
+        },
+        "models": [
+            {
+                "name": "stode",
+                "config": {
+                    "input_cols": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rnn_hidden_size": 32,
+                    "ode_hidden_size": 32,
+                    "cnf_width": 4,
+                    "output_size": 32,
+                    "ode_flag": false
+                }
+            },
+            {
+                "name": "trajode_decoder",
+                "config": {
+                    "encode_size": 32,
+                    "rnn_hidden_size": 32,
+                    "ode_hidden_size": 32,
+                    "decode_size": 4,
+                    "cnf_width": 4,
+                    "ode_flag": false,
+                    "cnf_flag": true
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": {
+                "name": "trajode",
+                "config": {
+                    "flat_valid": true,
+                    "input_cols": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "decode_size": 4,
+                    "embed_dim": 32,
+                    "num_class": 3,
+                    "elbo_weight": 5e-4,
+                    "cnf_flag": true
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 2,
+                    "batch_size": 256,
+                    "lr": 1e-1,
+                    "meta_types": [
+                        "speedacc"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 512,
+                    "save_prediction": false,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 1,
+                    "meta_types": [
+                        "resample-60"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            }
+        ]
+    }
+]

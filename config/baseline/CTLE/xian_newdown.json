@@ -1,0 +1,233 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "mlm_transformer",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "dis_feats": [
+                        5
+                    ],
+                    "num_embeds": [
+                        7
+                    ],
+                    "con_feats": [
+                        3,
+                        4
+                    ],
+                    "token_feat": 8,
+                    "num_tokens": 4315,
+                    "seq_feat": 6,
+                    "pool_type": "mean"
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "mlm",
+                    "config": {
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                4315
+                            ]
+                        },
+                        "out_con_feats": [
+                            3,
+                            4
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 128
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 64,
+                    "cache_epoches": false,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "mlm-60"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            
+        ]
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "mlm_transformer",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "dis_feats": [
+                        5
+                    ],
+                    "num_embeds": [
+                        7
+                    ],
+                    "con_feats": [
+                        3,
+                        4
+                    ],
+                    "token_feat": 8,
+                    "num_tokens": 4315,
+                    "seq_feat": 6,
+                    "pool_type": "mean"
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "mlm",
+                    "config": {
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                4315
+                            ]
+                        },
+                        "out_con_feats": [
+                            3,
+                            4
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 128
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 64,
+                    "cache_epoches": false,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "mlm-60"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination_location",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            },
+            {
+                "task": "destination_tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            },
+            {
+                "task": "od_tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

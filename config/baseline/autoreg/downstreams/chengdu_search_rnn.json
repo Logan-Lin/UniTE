@@ -1,0 +1,106 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "rnn_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 256,
+                    "output_size": 128,
+                    "variational": false,
+                    "road_col": 1,
+                    "aux_cols": [
+                        3,
+                        4
+                    ]
+                }
+            },
+            {
+                "name": "rnn_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "encode_size": 128,
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "autoreg",
+                    "config": {
+                        "flat_valid": true,
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                2505
+                            ]
+                        },
+                        "out_con_feats": [
+                            3,
+                            4
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 128
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 64,
+                    "cache_epoches": true,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 32,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "sim_indices": [
+                        "ksegsimidx-1000-10000"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ]
+                }
+            }
+        ]
+    }
+]

@@ -1,0 +1,75 @@
+[
+    {
+        "repeat": 3,
+        "data": {
+            "name": "chengdu_large"
+        },
+        "models": [
+            {
+                "name": "bert",
+                "config": {
+                    "d_model": 256,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 256,
+                    "dis_feats": [
+                        5
+                    ],
+                    "num_embeds": [
+                        7
+                    ],
+                    "con_feats": [
+
+                    ],
+                    "road_feat": 1,
+                    "token_feat": 8,
+                    "add_gat": true,
+                    "gat_num_features": [
+                        16,
+                        256
+                    ],
+                    "gat_num_heads": [
+                        8,
+                        1
+                    ],
+                    "gat_dropout": 0.6,
+                    "add_temporal_bias": false
+                }
+            }
+        ],
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 16,
+                    "save_prediction": true,
+                    "lr": 1.5e-4,
+                    "es_epoch": 3,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "trip-timemat",
+                        "tte"
+                    ],
+                    "ex_meta_types": [
+                        "transprob"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1
+                    ],
+                    "label_meta_i": [
+                        2
+                    ]
+                }
+            }
+        ]
+    }
+]

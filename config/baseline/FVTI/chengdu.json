@@ -1,0 +1,122 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "fvti",
+                "config": {
+                    "d_model": 128,
+                    "num_embed": 10001
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "fvti_wor2vec",
+                    "config": {
+
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "contrastive",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 512,
+                    "lr": 1e-3,
+                    "cache_epoches": true,
+                    "meta_types": [
+                        "conword-10"
+                    ],
+                    "contra_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 5,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "conwordtrip-10",
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            },
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "conwordtrip-10",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            },
+            {
+                "task": "classification",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 5,
+                    "meta_types": [
+                        "conwordtrip-10",
+                        "class"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

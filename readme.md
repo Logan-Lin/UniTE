@@ -298,6 +298,8 @@ downstream:
 
 The result configuration file is also provided as `config/example.yaml`.
 
+We also include reference configurations for the baselines in our paper in `config/baseline`. Do note that some of the configuration might not be directly runable out of the box, due to revisions of the implementation throughout the project development.
+
 ### Pre-training and Downstream Evaluation
 
 To run the main script with the configuration file we just prepared, use the following command:

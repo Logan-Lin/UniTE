@@ -1,0 +1,97 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "porto2224"
+        },
+        "models": [
+            {
+                "name": "ia",
+                "config": {
+                    "d_model": 64,
+                    "anchor_length": 8,
+                    "hidden_size": 128,
+                    "output_size": 64,
+                    "num_heads": 8,
+                    "dis_feats": [
+                        1
+                    ],
+                    "num_embeds": [
+                        2225
+                    ],
+                    "con_feats": [
+                        0,
+                        2,
+                        3
+                    ]
+                }
+            },
+            {
+                "name": "coa",
+                "config": {
+                    "input_cols": [
+                        0,
+                        2,
+                        3
+                    ],
+                    "hidden_size": 128,
+                    "output_size": 64,
+                    "d_model": 64,
+                    "num_heads": 8,
+                    "anchor_length": 8
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": {
+                "name": "mec",
+                "config": {
+                    "embed_dim": 64,
+                    "hidden_size": 128,
+                    "n": 5
+                }
+            },
+            "trainer": {
+                "name": "momentum",
+                "config": {
+                    "num_epoch": 30,
+                    "warmup_epoch": 10,
+                    "batch_size": 512,
+                    "lr": 0.1,
+                    "momentum": 0.9,
+                    "teacher_momentum": 0.996,
+                    "weight_decay": 1e-5,
+                    "eps": 512
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "just_forward",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 30,
+                    "batch_size": 128,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 5,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            }
+        ]
+    }
+]

@@ -1,0 +1,87 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "pretrain": false,
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 512,
+                    "num_layers": 3,
+                    "hidden_size": 512,
+                    "num_heads": 8,
+                    "output_size": 512,
+                    "road_col": 1,
+                    "embed_type": "road",
+                    "embed_para": 2505
+                }
+            },
+            {
+                "name": "dual_view_encoder",
+                "sampler": {
+                    "name": "random",
+                    "config": {
+                        "pretrain": false,
+                        "missing_ratio": 0.3,
+                        "subset_ratio": 0.7,
+                        "hop": 2
+                    }
+                },
+                "config": {
+                    "d_model": 512,
+                    "num_layers": 3,
+                    "hidden_size": 512,
+                    "num_heads": 8,
+                    "output_size": 512,
+                    "road_col": 0,
+                    "embed_type": "quadkey",
+                    "embed_para": 5
+                }
+            }
+        ],
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 256,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "classbatch",
+                        "timefea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2
+                    ],
+                    "label_meta_i": [
+                        0,
+                        1,
+                        2
+                    ]
+                }
+            }
+        ]
+    }
+]

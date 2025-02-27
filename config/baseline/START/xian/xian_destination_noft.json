@@ -1,0 +1,149 @@
+[
+    {
+        "repeat": 5,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "bert",
+                "config": {
+                    "d_model": 256,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 256,
+                    "dis_feats": [
+                        5,
+                        7
+                    ],
+                    "num_embeds": [
+                        7,
+                        1440
+                    ],
+                    "con_feats": [
+
+                    ],
+                    "road_feat": 1,
+                    "token_feat": 8,
+                    "add_gat": true,
+                    "gat_num_features": [
+                        16,
+                        256
+                    ],
+                    "gat_num_heads": [
+                        8,
+                        1
+                    ],
+                    "gat_dropout": 0.6
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "simclr",
+                    "config": {
+                        "embed_dim": 256,
+                        "similarity": "inner",
+                        "temperature": 0.05
+                    }
+                },
+                {
+                    "name": "mlm",
+                    "config": {
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                3392
+                            ]
+                        },
+                        "out_con_feats": [
+
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 256
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "multiple",
+                "config": {
+                    "num_epoch": 20,
+                    "batch_size": 32,
+                    "lr": 1e-3,
+                    "cache_epoches": false,
+                    "meta_types": [
+                        "mlm-60",
+                        "mlm-60-timemat",
+                        "trim-0.1",
+                        "trim-0.1-timemat",
+                        "shift-0.15",
+                        "shift-0.15-timemat"
+                    ],
+                    "ex_meta_types": [
+                        "transprob"
+                    ],
+                    "contra_meta_i": [
+                        2,
+                        3,
+                        4,
+                        5
+                    ],
+                    "gen_enc_meta_i": [
+                        0,
+                        1
+                    ],
+                    "gen_rec_meta_i": [
+                        0,
+                        1
+                    ],
+                    "loss_coef": [
+                        0.4,
+                        0.6
+                    ],
+                    "common_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "trip-timemat"
+                    ],
+                    "ex_meta_types": [
+                        "transprob"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1
+                    ],
+                    "label_meta_i": [
+                        0,
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

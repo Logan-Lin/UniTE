@@ -1,0 +1,114 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "chengdu"
+        },
+        "models": [
+            {
+                "name": "transformer_encoder",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 3,
+                    "hidden_size": 256,
+                    "num_heads": 8,
+                    "output_size": 128,
+                    "dis_feats": [
+                        1,
+                        5
+                    ],
+                    "num_embeds": [
+                        2505,
+                        7
+                    ],
+                    "con_feats": [
+                        3,
+                        4
+                    ]
+                }
+            },
+            {
+                "name": "transformer_decoder",
+                "config": {
+                    "encode_size": 128,
+                    "d_model": 128,
+                    "hidden_size": 256,
+                    "num_layers": 3,
+                    "num_heads": 8
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "autoreg",
+                    "config": {
+                        "flat_valid": true,
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                2505
+                            ]
+                        },
+                        "out_con_feats": [
+                            3,
+                            4
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 128
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 100,
+                    "batch_size": 32,
+                    "cache_epoches": true,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

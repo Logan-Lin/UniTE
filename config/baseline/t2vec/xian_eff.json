@@ -1,0 +1,135 @@
+[
+    {
+        "repeat": 3,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "rnn_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "d_model": 64,
+                    "num_layers": 6,
+                    "hidden_size": 64,
+                    "output_size": 64,
+                    "variational": false,
+                    "road_col": 1,
+                    "aux_cols": [
+                    ]
+                },
+                "sampler": {
+                    "name": "khop",
+                    "config": {
+                        "jump": 2,
+                        "select": 1
+                    }
+                }
+            },
+            {
+                "name": "rnn_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "encode_size": 64,
+                    "d_model": 64,
+                    "hidden_size": 64,
+                    "num_layers": 6
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "autoreg",
+                    "config": {
+                        "flat_valid": true,
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                3392
+                            ]
+                        },
+                        "out_con_feats": [
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 64
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 1,
+                    "batch_size": 16,
+                    "cache_epoches": false,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "destination",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 16,
+                    "save_prediction": true,
+                    "lr": 3.6e-4,
+                    "es_epoch": 5,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        0
+                    ]
+                }
+            },
+            {
+                "task": "tte",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 64,
+                    "save_prediction": true,
+                    "lr": 8e-5,
+                    "es_epoch": 3,
+                    "meta_types": [
+                        "trip",
+                        "tte"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]

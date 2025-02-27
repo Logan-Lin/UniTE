@@ -1,0 +1,114 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "porto"
+        },
+        "models": [
+            {
+                "name": "rnn_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "d_model": 64,
+                    "num_layers": 6,
+                    "hidden_size": 64,
+                    "output_size": 64,
+                    "variational": false,
+                    "road_col": 1,
+                    "aux_cols": [
+                    ]
+                },
+                "sampler": {
+                    "name": "khop",
+                    "config": {
+                        "jump": 2,
+                        "select": 1
+                    }
+                }
+            },
+            {
+                "name": "rnn_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "encode_size": 64,
+                    "d_model": 64,
+                    "hidden_size": 64,
+                    "num_layers": 6
+                }
+            }
+        ],
+        "pretrain": {
+            "load": false,
+            "loss": [
+                {
+                    "name": "autoreg",
+                    "config": {
+                        "flat_valid": true,
+                        "out_dis": {
+                            "feats": [
+                                1
+                            ],
+                            "num_embeds": [
+                                13696
+                            ]
+                        },
+                        "out_con_feats": [
+                        ],
+                        "dis_weight": 1,
+                        "con_weight": 1,
+                        "latent_size": 64
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 256,
+                    "cache_epoches": false,
+                    "lr": 1e-3,
+                    "meta_types": [
+                        "trip"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 16,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "hopqry-1000-5000",
+                        "hoptgt-1000-5000"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1
+                    ],
+                    "full_meta_types": [
+                        "trip"
+                    ],
+                    "negative_index": [
+                        "hopnegindex-1000-5000"
+                    ]
+                }
+            }
+        ]
+    }
+]

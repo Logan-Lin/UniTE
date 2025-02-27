@@ -1,0 +1,91 @@
+[
+    {
+        "repeat": 5,
+        "data": {
+            "name": "porto"
+        },
+        "models": [
+            {
+                "name": "traj2vec_encoder",
+                "config": {
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "num_layers": 2,
+                    "output_size": 128,
+                    "timediff": false
+                }
+            },
+            {
+                "name": "traj2vec_decoder",
+                "config": {
+                    "encode_size": 128,
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "num_layers": 2
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "load_epoch": 1,
+            "loss": {
+                "name": "trembr",
+                "config": {
+                    "flat_valid": true,
+                    "dis_weight": 0.9,
+                    "latent_size": 128,
+                    "timediff": false
+                }
+            },
+            "trainer": {
+                "name": "generative",
+                "config": {
+                    "num_epoch": 10,
+                    "batch_size": 128,
+                    "lr": 1e-3,
+                    "cache_epoches": false,
+                    "meta_types": [
+                        "trip-traj2vectime"
+                    ],
+                    "enc_meta_i": [
+                        0
+                    ],
+                    "rec_meta_i": [
+                        0
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": false,
+                    "num_epoch": 100,
+                    "batch_size": 256,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "hopqry-1000-5000-traj2vectime",
+                        "hoptgt-1000-5000-traj2vectime"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1
+                    ],
+                    "full_meta_types": [
+                        "trip-traj2vectime"
+                    ],
+                    "negative_index": [
+                        "hopnegindex-1000-5000"
+                    ]
+                }
+            }
+        ]
+    }
+]

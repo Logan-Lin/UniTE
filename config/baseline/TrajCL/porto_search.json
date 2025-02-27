@@ -1,0 +1,103 @@
+[
+    {
+        "repeat": 5,
+        "data": {
+            "name": "porto"
+        },
+        "models": [
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1
+                }
+            },
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "mocov1",
+                    "config": {
+                        "queue_size": 2048,
+                        "d_model": 128,
+                        "embed_size": 128,
+                        "temperature": 0.05
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "momentum",
+                "config": {
+                    "num_epoch": 10,
+                    "warmup_epoch": 10,
+                    "batch_size": 128,
+                    "lr": 0.005,
+                    "momentum": 0.9,
+                    "teacher_momentum": 0.996,
+                    "weight_decay": 1e-5,
+                    "eps": 256,
+                    "meta_types": [
+                        "trajclmask-0.3",
+                        "trajclmask-0.3-spatialfea",
+                        "trajclsubset-0.7",
+                        "trajclsubset-0.7-spatialfea"
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 32,
+                    "save_prediction": true,
+                    "lr": 1.5e-4,
+                    "es_epoch": 3,
+                    "pre_length": 5,
+                    "meta_types": [
+                        "hopqry-1000-5000",
+                        "hopqry-1000-5000-spatialfea",
+                        "hoptgt-1000-5000",
+                        "hoptgt-1000-5000-spatialfea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "neg_meta_types": [
+                        "hopneg-1000-5000",
+                        "hopneg-1000-5000-spatialfea"
+                    ]
+                }
+            }
+        ]
+    }
+]

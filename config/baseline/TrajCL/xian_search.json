@@ -1,0 +1,217 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1,
+                    "pre_embed": "road2vec-60-128",
+                    "pre_embed_update": false
+                }
+            },
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1,
+                    "pre_embed": "road2vec-60-128",
+                    "pre_embed_update": false
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "mocov1",
+                    "config": {
+                        "queue_size": 2048,
+                        "d_model": 128,
+                        "embed_size": 128,
+                        "temperature": 0.05
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "momentum",
+                "config": {
+                    "num_epoch": 10,
+                    "warmup_epoch": 10,
+                    "batch_size": 128,
+                    "lr": 0.005,
+                    "momentum": 0.9,
+                    "teacher_momentum": 0.996,
+                    "weight_decay": 1e-5,
+                    "eps": 256,
+                    "meta_types": [
+                        "trajclmask-0.3",
+                        "trajclmask-0.3-spatialfea",
+                        "trajclsubset-0.7",
+                        "trajclsubset-0.7-spatialfea"
+                    ],
+                    "cache_epoches": true
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 32,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 3,
+                    "meta_types": [
+                        "hopqry-1000-5000",
+                        "hopqry-1000-5000-spatialfea",
+                        "hoptgt-1000-5000",
+                        "hoptgt-1000-5000-spatialfea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "full_meta_types": [
+                        "trip",
+                        "trip-spatialfea"
+                    ],
+                    "negative_index": [
+                        "hopnegindex-1000-5000"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "repeat": 1,
+        "data": {
+            "name": "xian"
+        },
+        "models": [
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1,
+                    "pre_embed": "road2vec-60-128",
+                    "pre_embed_update": false
+                }
+            },
+            {
+                "name": "dual_stb",
+                "config": {
+                    "d_model": 128,
+                    "num_layers": 2,
+                    "hidden_size": 128,
+                    "num_heads": 4,
+                    "output_size": 128,
+                    "road_col": 1,
+                    "attn_dropout": 0.1,
+                    "pos_dropout": 0.1,
+                    "pre_embed": "road2vec-60-128",
+                    "pre_embed_update": false
+                }
+            }
+        ],
+        "pretrain": {
+            "load": true,
+            "loss": [
+                {
+                    "name": "mocov1",
+                    "config": {
+                        "queue_size": 2048,
+                        "d_model": 128,
+                        "embed_size": 128,
+                        "temperature": 0.05
+                    }
+                }
+            ],
+            "trainer": {
+                "name": "momentum",
+                "config": {
+                    "num_epoch": 10,
+                    "warmup_epoch": 10,
+                    "batch_size": 128,
+                    "lr": 0.005,
+                    "momentum": 0.9,
+                    "teacher_momentum": 0.996,
+                    "weight_decay": 1e-5,
+                    "eps": 256,
+                    "meta_types": [
+                        "trajclmask-0.3",
+                        "trajclmask-0.3-spatialfea",
+                        "trajclsubset-0.7",
+                        "trajclsubset-0.7-spatialfea"
+                    ]
+                }
+            }
+        },
+        "downstream": [
+            {
+                "task": "search",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 1,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 10,
+                    "batch_size": 16,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 3,
+                    "meta_types": [
+                        "hopqry-1000-5000",
+                        "hopqry-1000-5000-spatialfea",
+                        "hoptgt-1000-5000",
+                        "hoptgt-1000-5000-spatialfea"
+                    ],
+                    "enc_meta_i": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "full_meta_types": [
+                        "trip",
+                        "trip-spatialfea"
+                    ],
+                    "negative_index": [
+                        "hoprandomnegindex-1000-5000"
+                    ]
+                }
+            }
+        ]
+    }
+]

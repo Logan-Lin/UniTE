@@ -1,0 +1,57 @@
+[
+    {
+        "repeat": 1,
+        "data": {
+            "name": "porto",
+            "road_type": "grid"
+        },
+        "models": [
+            {
+                "name": "gmvsae_encoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "grid_col": 1,
+                    "d_model": 128,
+                    "hidden_size": 128,
+                    "rnn_output_size": 128,
+                    "num_cluster": 5,
+                    "output_size": 128
+                }
+            },
+            {
+                "name": "gmvsae_decoder",
+                "config": {
+                    "rnn_type": "gru",
+                    "grid_col": 1,
+                    "encode_size": 128,
+                    "d_model": 128,
+                    "hidden_size": 128
+                }
+            }
+        ],
+        "downstream": [
+            {
+                "task": "classification",
+                "select_models": [
+                    0
+                ],
+                "eval_set": 2,
+                "config": {
+                    "finetune": true,
+                    "num_epoch": 100,
+                    "batch_size": 512,
+                    "save_prediction": true,
+                    "lr": 1e-3,
+                    "es_epoch": 10,
+                    "meta_types": [
+                        "trip",
+                        "class"
+                    ],
+                    "label_meta_i": [
+                        1
+                    ]
+                }
+            }
+        ]
+    }
+]
